@@ -1,13 +1,21 @@
-import type { Route } from "./+types/home";
-import { Welcome } from "../welcome/welcome";
+"use client"
 
-export function meta({}: Route.MetaArgs) {
-  return [
-    { title: "New React Router App" },
-    { name: "description", content: "Welcome to React Router!" },
-  ];
-}
+import React from 'react';
+import Hero from '../components/hero';
+import FeaturedArticles from '../components/featured-articles';
+import Categories from '../components/categories';
+import Newsletter from '../components/newsletter';
+import { useAuth } from '../lib/contexts/AuthContext';
 
-export default function Home() {
-  return <Welcome />;
+export default function HomeRoute() {
+  const { user } = useAuth();
+
+  return (
+    <>
+      <Hero />
+      <FeaturedArticles />
+      <Categories />
+      <Newsletter />
+    </>
+  );
 }
