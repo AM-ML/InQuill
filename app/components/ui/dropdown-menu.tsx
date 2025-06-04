@@ -181,6 +181,21 @@ const DropdownMenuShortcut = ({
 }
 DropdownMenuShortcut.displayName = "DropdownMenuShortcut"
 
+export const DropdownMenuFooter = React.forwardRef<
+  React.ElementRef<typeof DropdownMenuPrimitive.Item>,
+  React.ComponentPropsWithoutRef<typeof DropdownMenuPrimitive.Item>
+>(({ className, ...props }, ref) => (
+  <DropdownMenuPrimitive.Item
+    ref={ref}
+    className={cn(
+      "flex cursor-default select-none items-center rounded-sm px-3 py-2 text-sm outline-none border-t mt-1 pt-2",
+      className
+    )}
+    {...props}
+  />
+))
+DropdownMenuFooter.displayName = "DropdownMenuFooter"
+
 export {
   DropdownMenu,
   DropdownMenuTrigger,

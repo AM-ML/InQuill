@@ -1,8 +1,38 @@
 declare module '@editorjs/editorjs' {
+  interface EditorConfig {
+    holder: string | HTMLElement;
+    tools?: any;
+    data?: any;
+    placeholder?: string;
+    autofocus?: boolean;
+    readOnly?: boolean;
+    onChange?: () => void;
+    onReady?: () => void;
+  }
+
+  export interface API {
+    clear(): void;
+  }
+
+  export interface BlockAPI {
+    clear(): void;
+    insert(type: string, data?: any): void;
+  }
+
   export default class EditorJS {
-    constructor(options: any);
+    constructor(options: EditorConfig);
+    
+    // Standard methods
     save(): Promise<any>;
-    destroy(): void;
+    destroy(): Promise<void>;
+    
+    // Extended methods that might be available
+    render(data: any): Promise<void>;
+    clear(): void;
+    
+    // Properties
+    isReady: Promise<void>;
+    blocks: BlockAPI;
   }
 }
 
@@ -49,4 +79,8 @@ declare module '@editorjs/delimiter' {
 declare module '@editorjs/code' {
   const Code: any;
   export default Code;
-} 
+}
+
+declare module '@editorjs/marker';
+declare module '@editorjs/checklist';
+declare module '@editorjs/table'; 

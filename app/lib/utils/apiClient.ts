@@ -1,7 +1,8 @@
 // API client for making requests to the backend
+import { getAuthToken } from './authUtils';
 
 // Define the base URL for API calls
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3000/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL;
 
 // Function to check if auth token needs to be refreshed
 const checkTokenRefresh = async () => {
@@ -34,10 +35,13 @@ const checkTokenRefresh = async () => {
 export const apiClient = {
   // Generic request method with auth handling
   async request(endpoint: string, options: RequestInit = {}) {
-    await checkTokenRefresh();
+    // Get the auth token from cookie or localStorage
+    const token = getAuthToken();
     
+    // Build headers with auth token if available
     const headers = {
       'Content-Type': 'application/json',
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
       ...(options.headers || {}),
     };
     
@@ -54,15 +58,21 @@ export const apiClient = {
       if (response.status === 401) {
         // Optional: Redirect to login page or trigger auth workflow
         window.dispatchEvent(new CustomEvent('auth:unauthorized'));
-        throw new Error('Unauthorized');
+        throw new Error('You need to be logged in to perform this action');
       }
       
       // Handle 403 Forbidden errors
       if (response.status === 403) {
-        throw new Error('Forbidden: You do not have permission to access this resource');
+        throw new Error('You do not have permission to access this resource. You need to have a writer role.');
       }
       
-      const data = await response.json();
+      let data;
+      const contentType = response.headers.get('content-type');
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'API request failed');
@@ -105,18 +115,43 @@ export const apiClient = {
   
   // Upload file (multipart/form-data)
   async uploadFile(endpoint: string, formData: FormData, options: RequestInit = {}) {
-    await checkTokenRefresh();
+    // Get the auth token
+    const token = getAuthToken();
+    
+    const headers = {
+      ...(token ? { 'Authorization': `Bearer ${token}` } : {}),
+      ...(options.headers || {}),
+    };
     
     const config = {
       ...options,
       method: 'POST',
       body: formData,
+      headers,
       credentials: 'include' as RequestCredentials,
     };
     
     try {
       const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-      const data = await response.json();
+      
+      if (response.status === 401) {
+        window.dispatchEvent(new CustomEvent('auth:unauthorized'));
+        throw new Error('You need to be logged in to upload files');
+      }
+      
+      if (response.status === 403) {
+        throw new Error('You do not have permission to upload files. You need to have a writer role.');
+      }
+      
+      const contentType = response.headers.get('content-type');
+      let data;
+      
+      if (contentType && contentType.includes('application/json')) {
+        data = await response.json();
+      } else {
+        data = await response.text();
+        return { file: { url: data } };
+      }
       
       if (!response.ok) {
         throw new Error(data.message || 'File upload failed');
@@ -141,8 +176,21 @@ export const apiClient = {
       return apiClient.get(`/articles?${queryParams.toString()}`);
     },
     
-    getById(id: string) {
-      return apiClient.get(`/articles/${id}`);
+    async getById(id: string) {
+      try {
+        const response = await apiClient.get(`/articles/${id}`);
+        
+        // Debug logging
+        console.log('API getById response:', response);
+        
+        // Return the response which could be either:
+        // 1. { article: {...}, comments: [...] } format
+        // 2. Direct article format
+        return response;
+      } catch (error) {
+        console.error('Error fetching article by ID:', error);
+        throw error;
+      }
     },
     
     create(articleData: any) {

@@ -1,120 +1,132 @@
-import { Link } from "react-router-dom"
-import { Facebook, Twitter, Instagram, Linkedin, Mail } from "lucide-react"
+import React from "react";
+import { Link } from "react-router-dom";
+import { Github, Twitter, Linkedin } from "lucide-react";
 
 export default function Footer() {
   return (
-    <footer className="bg-slate-50 dark:bg-gray-900/50 border-t">
-      <div className="container px-4 md:px-6 py-12 md:py-16">
-        <div className="grid gap-8 md:grid-cols-2 lg:grid-cols-4">
-          <div className="space-y-4">
-            <Link to="/" className="flex items-center space-x-2">
-              <div className="bg-gradient-to-r from-blue-600 to-blue-400 rounded-md w-8 h-8"></div>
-              <span className="font-bold text-xl">MedResearch</span>
-            </Link>
-            <p className="text-sm text-muted-foreground">
-              Advancing medical knowledge through research, education, and collaboration.
-            </p>
-            <div className="flex space-x-3">
-              <Link to="#" className="text-muted-foreground hover:text-primary">
-                <Facebook className="h-5 w-5" />
-                <span className="sr-only">Facebook</span>
-              </Link>
-              <Link to="#" className="text-muted-foreground hover:text-primary">
-                <Twitter className="h-5 w-5" />
-                <span className="sr-only">Twitter</span>
-              </Link>
-              <Link to="#" className="text-muted-foreground hover:text-primary">
-                <Instagram className="h-5 w-5" />
-                <span className="sr-only">Instagram</span>
-              </Link>
-              <Link to="#" className="text-muted-foreground hover:text-primary">
-                <Linkedin className="h-5 w-5" />
-                <span className="sr-only">LinkedIn</span>
-              </Link>
-            </div>
+    <footer className="border-t bg-background">
+      <div className="container flex flex-col md:flex-row py-8 gap-8 md:gap-0">
+        <div className="md:w-1/3">
+          <Link to="/" className="font-bold text-xl">Inquill</Link>
+          <p className="mt-2 text-muted-foreground">
+            A modern publishing platform for thoughtful articles, stories, and insights.
+          </p>
+          <div className="flex mt-4 space-x-4">
+            <a 
+              href="https://github.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Github className="h-5 w-5" />
+            </a>
+            <a 
+              href="https://twitter.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Twitter className="h-5 w-5" />
+            </a>
+            <a 
+              href="https://linkedin.com" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="text-muted-foreground hover:text-foreground"
+            >
+              <Linkedin className="h-5 w-5" />
+            </a>
           </div>
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg">Quick Links</h3>
-            <ul className="space-y-2 text-sm">
+        </div>
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-8 md:w-2/3">
+          <div>
+            <h3 className="font-semibold mb-4">Navigation</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/articles" className="text-muted-foreground hover:text-primary">
+                <Link to="/" className="text-muted-foreground hover:text-foreground">
+                  Home
+                </Link>
+              </li>
+              <li>
+                <Link to="/articles" className="text-muted-foreground hover:text-foreground">
                   Articles
                 </Link>
               </li>
               <li>
-                <Link to="/research" className="text-muted-foreground hover:text-primary">
-                  Research
+                <Link to="/categories" className="text-muted-foreground hover:text-foreground">
+                  Categories
                 </Link>
               </li>
               <li>
-                <Link to="/journals" className="text-muted-foreground hover:text-primary">
-                  Journals
-                </Link>
-              </li>
-              <li>
-                <Link to="/conferences" className="text-muted-foreground hover:text-primary">
-                  Conferences
-                </Link>
-              </li>
-              <li>
-                <Link to="/resources" className="text-muted-foreground hover:text-primary">
-                  Resources
+                <Link to="/about" className="text-muted-foreground hover:text-foreground">
+                  About
                 </Link>
               </li>
             </ul>
           </div>
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg">Categories</h3>
-            <ul className="space-y-2 text-sm">
+          <div>
+            <h3 className="font-semibold mb-4">Resources</h3>
+            <ul className="space-y-2">
               <li>
-                <Link to="/categories/cardiology" className="text-muted-foreground hover:text-primary">
-                  Cardiology
+                <Link to="/help" className="text-muted-foreground hover:text-foreground">
+                  Help Center
                 </Link>
               </li>
               <li>
-                <Link to="/categories/neurology" className="text-muted-foreground hover:text-primary">
-                  Neurology
+                <Link to="/contact" className="text-muted-foreground hover:text-foreground">
+                  Contact Us
                 </Link>
               </li>
               <li>
-                <Link to="/categories/immunology" className="text-muted-foreground hover:text-primary">
-                  Immunology
+                <Link to="/faqs" className="text-muted-foreground hover:text-foreground">
+                  FAQs
                 </Link>
               </li>
               <li>
-                <Link to="/categories/genetics" className="text-muted-foreground hover:text-primary">
-                  Genetics
-                </Link>
-              </li>
-              <li>
-                <Link to="/categories/oncology" className="text-muted-foreground hover:text-primary">
-                  Oncology
+                <Link to="/privacy" className="text-muted-foreground hover:text-foreground">
+                  Privacy Policy
                 </Link>
               </li>
             </ul>
           </div>
-          <div className="space-y-4">
-            <h3 className="font-medium text-lg">Contact</h3>
-            <ul className="space-y-2 text-sm">
-              <li className="flex items-start space-x-2">
-                <Mail className="h-5 w-5 text-muted-foreground mt-0.5" />
-                <span className="text-muted-foreground">contact@medresearch.org</span>
+          <div>
+            <h3 className="font-semibold mb-4">Community</h3>
+            <ul className="space-y-2">
+              <li>
+                <Link to="/writers" className="text-muted-foreground hover:text-foreground">
+                  For Writers
+                </Link>
+              </li>
+              <li>
+                <Link to="/readers" className="text-muted-foreground hover:text-foreground">
+                  For Readers
+                </Link>
+              </li>
+              <li>
+                <Link to="/guidelines" className="text-muted-foreground hover:text-foreground">
+                  Guidelines
+                </Link>
+              </li>
+              <li>
+                <Link to="/terms" className="text-muted-foreground hover:text-foreground">
+                  Terms of Service
+                </Link>
               </li>
             </ul>
-            <div className="pt-2">
-              <Link
-                to="/contact"
-                className="inline-flex h-9 items-center justify-center rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500"
-              >
-                Contact Us
-              </Link>
-            </div>
           </div>
         </div>
-        <div className="mt-12 pt-8 border-t text-center text-sm text-muted-foreground">
-          <p>© {new Date().getFullYear()} MedResearch. All rights reserved.</p>
+      </div>
+      <div className="container border-t py-6">
+        <div className="flex flex-col md:flex-row justify-between items-center">
+          <p className="text-sm text-muted-foreground">
+            © {new Date().getFullYear()} Inquill. All rights reserved.
+          </p>
+          <p className="text-sm text-muted-foreground mt-2 md:mt-0">
+            Crafted with care for thoughtful minds.
+          </p>
         </div>
       </div>
     </footer>
-  )
+  );
 }
+

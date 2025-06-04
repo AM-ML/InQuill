@@ -46,6 +46,8 @@ interface Article {
   author: {
     _id: string
     username: string
+    name?: string
+    title?: string
     avatar?: string
   }
 }
@@ -312,7 +314,7 @@ export default function MyArticlesPage() {
                 <Card key={article._id} className="overflow-hidden">
                   <div className="md:flex">
                     {article.coverImage && (
-                      <div className="md:w-1/4 h-40 md:h-auto">
+                      <div className="md:w-1/4 aspect-[5/3]">
                         <img 
                           src={article.coverImage} 
                           alt={article.title} 
@@ -329,7 +331,9 @@ export default function MyArticlesPage() {
                               <Badge variant="outline">{article.category}</Badge>
                             )}
                           </div>
-                          <h3 className="text-xl font-bold mb-2 line-clamp-1">{article.title}</h3>
+                          <Link className="hover:text-blue-600 dark:hover:text-blue-400" to={`/articles/${article._id}`}>
+                            <h3 className="text-xl font-bold mb-2 line-clamp-1">{article.title}</h3>
+                          </Link>
                           {article.description && (
                             <p className="text-muted-foreground mb-4 line-clamp-2">{article.description}</p>
                           )}
@@ -372,7 +376,7 @@ export default function MyArticlesPage() {
                             <AvatarFallback>{article.author.username.charAt(0)}</AvatarFallback>
                           </Avatar>
                           <div>
-                            <p className="text-sm font-medium">{article.author.username}</p>
+                            <p className="text-sm font-medium">{article.author.name || article.author.username}</p>
                             <p className="text-xs text-muted-foreground">
                               {article.status.toLowerCase() === 'draft' 
                                 ? `Last updated ${formatDate(article.updatedAt)}` 

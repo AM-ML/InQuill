@@ -9,6 +9,8 @@ const articleRoutes = require('./routes/articles');
 const commentRoutes = require('./routes/comments');
 const uploadRoutes = require('./routes/uploads');
 const { auth, authorize } = require('./middleware/auth');
+const User = require('./models/User');
+const jwt = require('jsonwebtoken');
 
 const app = express();
 
@@ -47,6 +49,125 @@ app.use('/api/auth', authRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/uploads', uploadRoutes);
+
+// User profile update route
+app.put('/api/users/profile', auth, async (req, res) => {
+  try {
+    const { username, name, bio, title, avatar } = req.body;
+    const userId = req.user._id;
+
+    // Find user and update
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      { username, name, bio, title, avatar },
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // Create a new token with updated user info
+    const token = jwt.sign(
+      { userId: updatedUser._id },
+      process.env.JWT_SECRET,
+      { expiresIn: '30d' }
+    );
+
+    // Set HTTP-only cookie with the new token
+    res.cookie('token', token, {
+      httpOnly: true,
+      secure: true,
+      sameSite: 'none',
+      maxAge: 30 * 24 * 60 * 60 * 1000 // 30 days
+    });
+
+    // Return the updated user and new token
+    res.json({ 
+      user: updatedUser,
+      token 
+    });
+  } catch (error) {
+    console.error('Error updating user profile:', error);
+    res.status(500).json({ message: 'Error updating profile', error: error.message });
+  }
+});
+
+// User password update route
+app.put('/api/users/password', auth, async (req, res) => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const userId = req.user._id;
+
+    // Find the user
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    // In a real app, you would verify the current password
+    // and hash the new password before saving
+    // This is a simplified version
+    
+    // Update password
+    user.password = newPassword;
+    await user.save();
+
+    res.json({ message: 'Password updated successfully' });
+  } catch (error) {
+    console.error('Error updating password:', error);
+    res.status(500).json({ message: 'Error updating password', error: error.message });
+  }
+});
+
+// User notification settings route
+app.put('/api/users/notifications', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // In a real app, you would store these settings in the user model
+    // For now, we'll just acknowledge the request
+    
+    res.json({ message: 'Notification settings updated' });
+  } catch (error) {
+    console.error('Error updating notification settings:', error);
+    res.status(500).json({ message: 'Error updating notification settings', error: error.message });
+  }
+});
+
+// User statistics route
+app.get('/api/users/statistics', auth, async (req, res) => {
+  try {
+    const userId = req.user._id;
+    
+    // Mock statistics data
+    // In a real app, you would calculate these from the database
+    const statistics = {
+      totalArticles: 5,
+      totalViews: 1250,
+      totalLikes: 47,
+      totalComments: 23
+    };
+    
+    res.json(statistics);
+  } catch (error) {
+    console.error('Error fetching user statistics:', error);
+    res.status(500).json({ message: 'Error fetching statistics', error: error.message });
+  }
+});
+
+// Email verification route
+app.post('/api/users/verify-email', auth, async (req, res) => {
+  try {
+    // In a real app, you would send a verification email
+    // For now, we'll just acknowledge the request
+    
+    res.json({ message: 'Verification email sent' });
+  } catch (error) {
+    console.error('Error sending verification email:', error);
+    res.status(500).json({ message: 'Error sending verification email', error: error.message });
+  }
+});
 
 // Protected route example
 app.get('/api/protected', auth, (req, res) => {

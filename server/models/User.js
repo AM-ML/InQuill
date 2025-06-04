@@ -20,10 +20,30 @@ const userSchema = new mongoose.Schema({
     required: true,
     minlength: 6
   },
+  name: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  bio: {
+    type: String,
+    trim: true,
+    default: ''
+  },
+  avatar: {
+    type: String,
+    default: ''
+  },
   role: {
     type: String,
     enum: ['user', 'writer', 'admin'],
     default: 'user'
+  },
+  title: {
+    type: String,
+    trim: true,
+    // Only writers and admins typically have titles
+    default: ''
   },
   createdAt: {
     type: Date,

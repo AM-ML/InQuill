@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import { Mail, Lock, Bell, Eye, EyeOff, Check, AlertCircle } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
@@ -12,13 +12,17 @@ import { Badge } from "../components/ui/badge"
 import { Separator } from "../components/ui/separator"
 import { useAuth } from "../lib/contexts/AuthContext"
 import { useToast } from "../hooks/use-toast"
+import { userService } from "../lib/services/userService"
 
 export default function SettingsPage() {
-  const { user } = useAuth()
-  const [emailVerified, setEmailVerified] = useState(true)
+  const { user, sendVerificationEmail } = useAuth()
   const [showCurrentPassword, setShowCurrentPassword] = useState(false)
   const [showNewPassword, setShowNewPassword] = useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = useState(false)
+  const [passwordLoading, setPasswordLoading] = useState(false)
+  const [verifyLoading, setVerifyLoading] = useState(false)
+  const [notificationsLoading, setNotificationsLoading] = useState(false)
+  const [notificationsInitialized, setNotificationsInitialized] = useState(false)
   const [passwordData, setPasswordData] = useState({
     currentPassword: "",
     newPassword: "",
@@ -34,49 +38,130 @@ export default function SettingsPage() {
   })
   const { toast } = useToast()
 
-  const handleVerifyEmail = () => {
-    toast({
-      title: "Verification email sent",
-      description: "Please check your inbox and click the verification link.",
-    })
+  // Fetch notification settings on component mount
+  useEffect(() => {
+    async function fetchNotificationSettings() {
+      try {
+        setNotificationsLoading(true);
+        const settings = await userService.getNotificationSettings();
+        setNotifications(settings);
+        setNotificationsInitialized(true);
+      } catch (error) {
+        console.error("Error fetching notification settings:", error);
+        toast({
+          title: "Failed to load notification settings",
+          description: "Using default settings instead.",
+          type: "error"
+        });
+      } finally {
+        setNotificationsLoading(false);
+      }
+    }
+
+    if (user && !notificationsInitialized) {
+      fetchNotificationSettings();
+    }
+  }, [user, notificationsInitialized, toast]);
+
+  const handleVerifyEmail = async () => {
+    try {
+      setVerifyLoading(true);
+      await sendVerificationEmail();
+      toast({
+        title: "Verification email sent",
+        description: "Please check your inbox and click the verification link.",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error sending verification email:", error);
+      toast({
+        title: "Failed to send verification email",
+        description: "Please try again later.",
+        type: "error"
+      });
+    } finally {
+      setVerifyLoading(false);
+    }
   }
 
-  const handlePasswordReset = () => {
+  const handlePasswordReset = async () => {
+    // Validate password fields
     if (passwordData.newPassword !== passwordData.confirmPassword) {
       toast({
         title: "Passwords don't match",
-        description: "Please make sure your passwords match.",
-      })
-      return
+        description: "Your new password and confirmation do not match.",
+        type: "error"
+      });
+      return;
     }
 
-    if (!passwordData.currentPassword || !passwordData.newPassword) {
+    if (passwordData.newPassword.length < 8) {
       toast({
-        title: "Missing information",
-        description: "Please fill in all password fields.",
-      })
-      return
+        title: "Password too short",
+        description: "Your new password must be at least 8 characters long.",
+        type: "error"
+      });
+      return;
     }
 
-    // Reset form after successful update
-    setPasswordData({
-      currentPassword: "",
-      newPassword: "",
-      confirmPassword: ""
-    })
-
-    toast({
-      title: "Password updated",
-      description: "Your password has been successfully changed.",
-    })
+    try {
+      setPasswordLoading(true);
+      await userService.updatePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword
+      });
+      
+      // Clear form
+      setPasswordData({
+        currentPassword: "",
+        newPassword: "",
+        confirmPassword: ""
+      });
+      
+      toast({
+        title: "Password updated",
+        description: "Your password has been successfully updated.",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error updating password:", error);
+      toast({
+        title: "Password update failed",
+        description: "Please check your current password and try again.",
+        type: "error"
+      });
+    } finally {
+      setPasswordLoading(false);
+    }
   }
 
-  const handleNotificationChange = (key: string, value: boolean) => {
-    setNotifications((prev) => ({ ...prev, [key]: value }))
-    toast({
-      title: "Settings updated",
-      description: "Your notification preferences have been saved.",
-    })
+  const handleNotificationChange = async (key: string, value: boolean) => {
+    // Optimistically update UI
+    const updatedNotifications = { ...notifications, [key]: value };
+    setNotifications(updatedNotifications);
+    
+    try {
+      setNotificationsLoading(true);
+      await userService.updateNotificationSettings(updatedNotifications);
+      
+      toast({
+        title: "Notification settings updated",
+        description: "Your notification preferences have been saved.",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error updating notification settings:", error);
+      // Revert the change if the update failed
+      setNotifications(notifications);
+      
+      toast({
+        title: "Update failed",
+        description: "Failed to update notification settings.",
+        type: "error"
+      });
+    } finally {
+      setNotificationsLoading(false);
+    }
   }
 
   return (
@@ -105,33 +190,34 @@ export default function SettingsPage() {
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="flex items-center justify-between p-4 rounded-lg border">
-                <div className="flex items-center space-x-3">
-                  <div
-                    className={`p-2 rounded-full ${emailVerified ? "bg-green-100 dark:bg-green-900/30" : "bg-yellow-100 dark:bg-yellow-900/30"}`}
-                  >
-                    {emailVerified ? (
-                      <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
-                    ) : (
-                      <AlertCircle className="h-4 w-4 text-yellow-600 dark:text-yellow-400" />
-                    )}
-                  </div>
-                  <div>
-                    <p className="font-medium">{user?.email || "user@example.com"}</p>
-                    <p className="text-sm text-muted-foreground">
-                      {emailVerified ? "Verified" : "Pending verification"}
-                    </p>
-                  </div>
+              <div className="flex items-center justify-between">
+                <div className="space-y-0.5">
+                  <div className="text-sm font-medium">{user?.email}</div>
+                  {user?.emailVerified ? (
+                    <div className="flex items-center text-sm text-green-600 dark:text-green-400">
+                      <Check className="h-4 w-4 mr-1" />
+                      Verified
+                    </div>
+                  ) : (
+                    <div className="flex items-center text-sm text-amber-600 dark:text-amber-400">
+                      <AlertCircle className="h-4 w-4 mr-1" />
+                      Not verified
+                    </div>
+                  )}
                 </div>
-                <Badge variant={emailVerified ? "default" : "secondary"}>
-                  {emailVerified ? "Verified" : "Unverified"}
-                </Badge>
+                {!user?.emailVerified && (
+                  <Button onClick={handleVerifyEmail} variant="outline" disabled={verifyLoading}>
+                    {verifyLoading ? (
+                      <span className="flex items-center">
+                        <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Sending...
+                      </span>
+                    ) : (
+                      "Send verification email"
+                    )}
+                  </Button>
+                )}
               </div>
-              {!emailVerified && (
-                <Button onClick={handleVerifyEmail} className="w-full">
-                  Send Verification Email
-                </Button>
-              )}
             </CardContent>
           </Card>
         </motion.div>
@@ -217,8 +303,15 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
-                <Button onClick={handlePasswordReset} className="w-full">
-                  Update Password
+                <Button onClick={handlePasswordReset} className="w-full" disabled={passwordLoading}>
+                  {passwordLoading ? (
+                    <span className="flex items-center">
+                      <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                      Updating...
+                    </span>
+                  ) : (
+                    "Update Password"
+                  )}
                 </Button>
               </div>
             </CardContent>
@@ -248,6 +341,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notifications.emailNotifications}
                     onCheckedChange={(checked) => handleNotificationChange("emailNotifications", checked)}
+                    disabled={notificationsLoading}
                   />
                 </div>
 
@@ -261,6 +355,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notifications.pushNotifications}
                     onCheckedChange={(checked) => handleNotificationChange("pushNotifications", checked)}
+                    disabled={notificationsLoading}
                   />
                 </div>
 
@@ -274,6 +369,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notifications.articleUpdates}
                     onCheckedChange={(checked) => handleNotificationChange("articleUpdates", checked)}
+                    disabled={notificationsLoading}
                   />
                 </div>
 
@@ -287,6 +383,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notifications.weeklyDigest}
                     onCheckedChange={(checked) => handleNotificationChange("weeklyDigest", checked)}
+                    disabled={notificationsLoading}
                   />
                 </div>
 
@@ -300,6 +397,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notifications.commentNotifications}
                     onCheckedChange={(checked) => handleNotificationChange("commentNotifications", checked)}
+                    disabled={notificationsLoading}
                   />
                 </div>
 
@@ -313,6 +411,7 @@ export default function SettingsPage() {
                   <Switch
                     checked={notifications.likeNotifications}
                     onCheckedChange={(checked) => handleNotificationChange("likeNotifications", checked)}
+                    disabled={notificationsLoading}
                   />
                 </div>
               </div>

@@ -1,8 +1,8 @@
 "use client"
 
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { motion } from "framer-motion"
-import { Camera, Upload, X, Save, User, Mail } from "lucide-react"
+import { Camera, Upload, X, Save, User, Mail, AlertCircle, BadgeInfo } from "lucide-react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "../components/ui/card"
 import { Button } from "../components/ui/button"
 import { Input } from "../components/ui/input"
@@ -11,70 +11,157 @@ import { Avatar, AvatarFallback, AvatarImage } from "../components/ui/avatar"
 import { Textarea } from "../components/ui/textarea"
 import { useAuth } from "../lib/contexts/AuthContext"
 import { useToast } from "../hooks/use-toast"
+import { userService } from "../lib/services/userService"
+
+// Define custom ToastProps with variant
+interface CustomToastProps {
+  title?: string
+  description?: string
+  action?: React.ReactNode
+  variant?: "default" | "destructive"
+}
 
 export default function ProfilePage() {
-  const { user } = useAuth()
+  const { user, updateUser } = useAuth()
   const [profileData, setProfileData] = useState({
     username: user?.username || "",
     email: user?.email || "",
-    bio: "Researcher specializing in AI applications in medical diagnosis. Published author with over 50 peer-reviewed papers.",
+    name: user?.name || "",
+    bio: user?.bio || "",
+    title: user?.title || "",
     avatar: user?.avatar || "/placeholder.svg"
   })
   const [isEditing, setIsEditing] = useState(false)
   const [avatarPreview, setAvatarPreview] = useState<string | null>(null)
+  const [avatarFile, setAvatarFile] = useState<File | null>(null)
   const [isDragging, setIsDragging] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [userStats, setUserStats] = useState({
+    totalArticles: 0,
+    totalViews: 0,
+    totalLikes: 0,
+    totalComments: 0
+  })
   const { toast } = useToast()
+
+  // Fetch user statistics
+  useEffect(() => {
+    const fetchUserStats = async () => {
+      try {
+        const stats = await userService.getUserStatistics();
+        setUserStats(stats);
+      } catch (error) {
+        console.error("Error fetching user statistics:", error);
+      }
+    };
+
+    fetchUserStats();
+  }, []);
 
   const onDrop = useCallback((file: File) => {
     if (file) {
-      const reader = new FileReader()
+      setAvatarFile(file);
+      const reader = new FileReader();
       reader.onload = () => {
-        setAvatarPreview(reader.result as string)
-      }
-      reader.readAsDataURL(file)
+        setAvatarPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
     }
-  }, [])
+  }, []);
 
   const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
 
   const handleDragLeave = useCallback(() => {
-    setIsDragging(false)
-  }, [])
+    setIsDragging(false);
+  }, []);
 
   const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
+    e.preventDefault();
+    setIsDragging(false);
     
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      onDrop(e.dataTransfer.files[0])
+      onDrop(e.dataTransfer.files[0]);
     }
-  }, [onDrop])
+  }, [onDrop]);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      onDrop(e.target.files[0])
+      onDrop(e.target.files[0]);
     }
-  }
+  };
 
-  const handleSave = () => {
-    if (avatarPreview) {
-      setProfileData((prev) => ({ ...prev, avatar: avatarPreview }))
-      setAvatarPreview(null)
+  const handleSave = async () => {
+    try {
+      setLoading(true);
+      
+      // Upload avatar if there's a new one
+      let avatarUrl = profileData.avatar;
+      if (avatarFile) {
+        const response = await userService.uploadAvatar(avatarFile);
+        avatarUrl = response.url;
+        console.log("Uploaded avatar URL:", avatarUrl);
+      }
+      
+      // Update profile data
+      const updatedUser = await userService.updateProfile({
+        username: profileData.username,
+        name: profileData.name,
+        bio: profileData.bio,
+        title: profileData.title,
+        avatar: avatarUrl
+      });
+      
+      // Update local state
+      setProfileData(prev => ({
+        ...prev,
+        ...updatedUser,
+        avatar: avatarUrl
+      }));
+      
+      // Update user in auth context to keep it in sync
+      updateUser({
+        ...updatedUser,
+        avatar: avatarUrl
+      });
+      
+      setAvatarPreview(null);
+      setAvatarFile(null);
+      setIsEditing(false);
+      
+      toast({
+        title: "Profile updated",
+        description: "Your profile has been successfully updated.",
+        type: "success"
+      });
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      toast({
+        title: "Update failed",
+        description: "There was a problem updating your profile.",
+        type: "error"
+      });
+    } finally {
+      setLoading(false);
     }
-    setIsEditing(false)
-    toast({
-      title: "Profile updated",
-      description: "Your profile has been successfully updated.",
-    })
-  }
+  };
 
   const handleCancel = () => {
-    setAvatarPreview(null)
-    setIsEditing(false)
-  }
+    // Reset form to current user data
+    setProfileData({
+      username: user?.username || "",
+      email: user?.email || "",
+      name: user?.name || "",
+      bio: user?.bio || "",
+      title: user?.title || "",
+      avatar: user?.avatar || "/placeholder.svg"
+    });
+    setAvatarPreview(null);
+    setAvatarFile(null);
+    setIsEditing(false);
+  };
 
   return (
     <div className="space-y-8">
@@ -88,12 +175,21 @@ export default function ProfilePage() {
             <Button onClick={() => setIsEditing(true)}>Edit Profile</Button>
           ) : (
             <div className="flex space-x-2">
-              <Button variant="outline" onClick={handleCancel}>
+              <Button variant="outline" onClick={handleCancel} disabled={loading}>
                 Cancel
               </Button>
-              <Button onClick={handleSave}>
-                <Save className="h-4 w-4 mr-2" />
-                Save Changes
+              <Button onClick={handleSave} disabled={loading}>
+                {loading ? (
+                  <span className="flex items-center">
+                    <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                    Saving...
+                  </span>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Changes
+                  </>
+                )}
               </Button>
             </div>
           )}
@@ -166,7 +262,10 @@ export default function ProfilePage() {
                       <div className="mt-4 p-3 bg-green-50 dark:bg-green-950/30 rounded-lg border border-green-200 dark:border-green-800">
                         <div className="flex items-center justify-between">
                           <p className="text-sm text-green-700 dark:text-green-400">New image ready to save</p>
-                          <Button size="sm" variant="ghost" onClick={() => setAvatarPreview(null)}>
+                          <Button size="sm" variant="ghost" onClick={() => {
+                            setAvatarPreview(null);
+                            setAvatarFile(null);
+                          }}>
                             <X className="h-4 w-4" />
                           </Button>
                         </div>
@@ -215,14 +314,46 @@ export default function ProfilePage() {
                       type="email"
                       value={profileData.email}
                       onChange={(e) => setProfileData((prev) => ({ ...prev, email: e.target.value }))}
-                      disabled={!isEditing}
+                      disabled={true} // Email changes should go through a verification process
                       className="pl-10"
                     />
                   </div>
                 </div>
               </div>
 
-              <div className="space-y-2">
+              <div className="grid gap-4 md:grid-cols-2">
+                <div className="space-y-2">
+                  <Label htmlFor="name">Name</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="name"
+                      value={profileData.name}
+                      onChange={(e) => setProfileData((prev) => ({ ...prev, name: e.target.value }))}
+                      disabled={!isEditing}
+                      className="pl-10"
+                      placeholder="Your display name"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="title">Title/Position</Label>
+                  <div className="relative">
+                    <BadgeInfo className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      id="title"
+                      value={profileData.title}
+                      onChange={(e) => setProfileData((prev) => ({ ...prev, title: e.target.value }))}
+                      disabled={!isEditing}
+                      className="pl-10"
+                      placeholder="e.g. Researcher, Professor, etc."
+                    />
+                  </div>
+                </div>
+              </div>
+
+              <div>
                 <Label htmlFor="bio">Bio</Label>
                 <Textarea
                   id="bio"
@@ -236,12 +367,21 @@ export default function ProfilePage() {
 
               {isEditing && (
                 <div className="flex justify-end space-x-2 pt-4 border-t">
-                  <Button variant="outline" onClick={handleCancel}>
+                  <Button variant="outline" onClick={handleCancel} disabled={loading}>
                     Cancel
                   </Button>
-                  <Button onClick={handleSave}>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Changes
+                  <Button onClick={handleSave} disabled={loading}>
+                    {loading ? (
+                      <span className="flex items-center">
+                        <span className="h-4 w-4 mr-2 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                        Saving...
+                      </span>
+                    ) : (
+                      <>
+                        <Save className="h-4 w-4 mr-2" />
+                        Save Changes
+                      </>
+                    )}
                   </Button>
                 </div>
               )}
@@ -263,19 +403,19 @@ export default function ProfilePage() {
           <CardContent>
             <div className="grid gap-4 md:grid-cols-4">
               <div className="text-center p-4 rounded-lg border">
-                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">12</div>
+                <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">{userStats.totalArticles}</div>
                 <div className="text-sm text-muted-foreground">Articles Published</div>
               </div>
               <div className="text-center p-4 rounded-lg border">
-                <div className="text-2xl font-bold text-green-600 dark:text-green-400">24.5K</div>
+                <div className="text-2xl font-bold text-green-600 dark:text-green-400">{userStats.totalViews}</div>
                 <div className="text-sm text-muted-foreground">Total Views</div>
               </div>
               <div className="text-center p-4 rounded-lg border">
-                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">1.2K</div>
+                <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">{userStats.totalLikes}</div>
                 <div className="text-sm text-muted-foreground">Likes Received</div>
               </div>
               <div className="text-center p-4 rounded-lg border">
-                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">342</div>
+                <div className="text-2xl font-bold text-orange-600 dark:text-orange-400">{userStats.totalComments}</div>
                 <div className="text-sm text-muted-foreground">Comments</div>
               </div>
             </div>
@@ -283,5 +423,5 @@ export default function ProfilePage() {
         </Card>
       </motion.div>
     </div>
-  )
+  );
 } 

@@ -29,7 +29,11 @@ export const setAuthToken = (token: string | null, rememberMe: boolean = false):
       ? `; expires=${new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toUTCString()}` // 30 days
       : ''; // Session cookie
     
-    document.cookie = `auth_token=${encodeURIComponent(token)}${expires}; path=/; SameSite=None; Secure`;
+      const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+
+      const sameSiteSecure = isLocalhost ? '' : '; SameSite=None; Secure';
+      
+      document.cookie = `auth_token=${encodeURIComponent(token)}${expires}; path=/${sameSiteSecure}`;
   } else {
     // Delete the cookie by setting expiration in the past
     document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure';

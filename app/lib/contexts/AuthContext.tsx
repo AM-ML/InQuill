@@ -9,6 +9,10 @@ interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  name?: string;
+  bio?: string;
+  title?: string;
+  emailVerified?: boolean;
 }
 
 interface AuthContextType {
@@ -19,23 +23,54 @@ interface AuthContextType {
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
   checkAuth: () => Promise<void>;
+  updateUser: (userData: Partial<User>) => void;
+  sendVerificationEmail: () => Promise<void>;
+  verifyEmail: (token: string) => Promise<void>;
+  requestPasswordReset: (email: string) => Promise<void>;
+  resetPassword: (token: string, password: string) => Promise<void>;
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+// Provide default values for all properties
+const defaultAuthContext: AuthContextType = {
+  user: null,
+  loading: true,
+  error: null,
+  login: async () => { throw new Error('AuthContext not initialized'); },
+  register: async () => { throw new Error('AuthContext not initialized'); },
+  logout: async () => { throw new Error('AuthContext not initialized'); },
+  checkAuth: async () => { throw new Error('AuthContext not initialized'); },
+  updateUser: () => { throw new Error('AuthContext not initialized'); },
+  sendVerificationEmail: async () => { throw new Error('AuthContext not initialized'); },
+  verifyEmail: async () => { throw new Error('AuthContext not initialized'); },
+  requestPasswordReset: async () => { throw new Error('AuthContext not initialized'); },
+  resetPassword: async () => { throw new Error('AuthContext not initialized'); },
+};
+
+// Create context with default values
+const AuthContext = createContext<AuthContextType>(defaultAuthContext);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
   // Use useCallback to prevent unnecessary re-renders
   const checkAuth = useCallback(async () => {
     if (!isAuthenticated()) {
       setUser(null);
       setLoading(false);
+      setInitialized(true);
       return;
     }
-    
+  
+    // If user already set and no error, maybe skip?
+    if (user) {
+      setLoading(false);
+      setInitialized(true);
+      return;
+    }
+  
     try {
       setLoading(true);
       const user = await authService.getCurrentUser();
@@ -45,8 +80,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     } finally {
       setLoading(false);
+      setInitialized(true);
     }
-  }, []);
+  }, [user]);
 
   // Check authentication on mount and when window gains focus
   useEffect(() => {
@@ -106,8 +142,95 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
+  // Update user data in state
+  const updateUser = (userData: Partial<User>) => {
+    if (user) {
+      setUser({ ...user, ...userData });
+    }
+  };
+
+  // Email verification methods
+  const sendVerificationEmail = async () => {
+    try {
+      setLoading(true);
+      await authService.sendVerificationEmail();
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to send verification email');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const verifyEmail = async (token: string) => {
+    try {
+      setLoading(true);
+      await authService.verifyEmail(token);
+      // Update the user's email verification status
+      if (user) {
+        setUser({ ...user, emailVerified: true });
+      }
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Email verification failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Password reset methods
+  const requestPasswordReset = async (email: string) => {
+    try {
+      setLoading(true);
+      await authService.requestPasswordReset(email);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to request password reset');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const resetPassword = async (token: string, password: string) => {
+    try {
+      setLoading(true);
+      await authService.resetPassword(token, password);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Password reset failed');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Show a loading state until auth is initialized
+  if (!initialized && loading) {
+    return (
+      <div className="flex items-center justify-center h-screen">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
   return (
-    <AuthContext.Provider value={{ user, loading, error, login, register, logout, checkAuth }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      loading, 
+      error, 
+      login, 
+      register, 
+      logout, 
+      checkAuth, 
+      updateUser,
+      sendVerificationEmail,
+      verifyEmail,
+      requestPasswordReset,
+      resetPassword
+    }}>
       {children}
     </AuthContext.Provider>
   );
@@ -115,8 +238,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
 export function useAuth() {
   const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  
+  // Instead of throwing an error, we return the default context
   return context;
 } 

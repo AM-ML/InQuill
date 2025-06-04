@@ -14,8 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from ".
 import { Separator } from "../components/ui/separator"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "../components/ui/tabs"
 import { Switch } from "../components/ui/switch"
-import TipTapEditor, { TipTapEditorRef } from "../components/editor/tiptap-editor"
-import TipTapRenderer from "../components/editor/tiptap-renderer"
+import { RichEditor } from "../components/editor/rich-editor"
+import type { RichEditorRef } from "../components/editor/rich-editor"
+import RichEditorRenderer, { RichEditorStyle } from "../components/editor/rich-editor-renderer"
 import { useAuth } from "../lib/contexts/AuthContext"
 import { useToast } from "../hooks/use-toast"
 import { apiClient } from "../lib/utils/apiClient"
@@ -36,13 +37,13 @@ export default function WriteArticlePage() {
   const location = useLocation()
   const navigate = useNavigate()
   const { toast } = useToast()
-  const editorRef = useRef<TipTapEditorRef>(null)
+  const editorRef = useRef<RichEditorRef>(null)
   
   // Article state
   const [article, setArticle] = useState<Article>({
     title: "",
     description: "",
-    content: { type: "doc", content: [] },
+    content: { blocks: [] },
     category: "",
     tags: [],
     coverImage: "",
@@ -116,6 +117,36 @@ export default function WriteArticlePage() {
     
     // We don't set the article.coverImage here - that happens on save when we upload to the server
   }, [])
+
+  // Handle drag over for cover image
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.currentTarget.classList.add("border-blue-500", "bg-blue-50", "dark:bg-blue-950/30")
+  }, [])
+
+  // Handle drag leave for cover image
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.currentTarget.classList.remove("border-blue-500", "bg-blue-50", "dark:bg-blue-950/30")
+  }, [])
+
+  // Handle drop for cover image
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault()
+    e.stopPropagation()
+    e.currentTarget.classList.remove("border-blue-500", "bg-blue-50", "dark:bg-blue-950/30")
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const file = e.dataTransfer.files[0]
+      if (file.type.startsWith("image/")) {
+        const previewUrl = URL.createObjectURL(file)
+        setCoverImageFile(file)
+        setCoverImagePreview(previewUrl)
+      }
+    }
+  }, [])
   
   // Clear cover image
   const handleClearCoverImage = useCallback(() => {
@@ -134,17 +165,23 @@ export default function WriteArticlePage() {
       
       apiClient.articles.getById(editId)
         .then(response => {
-          const articleData = response.article
+          // Handle both response formats (direct article or {article, comments})
+          const articleData = response.article || response;
+          
+          console.log("Article data for editing:", articleData);
+          
+          // Ensure we have a valid content structure for the editor
+          const content = articleData.content || { blocks: [] };
           
           setArticle({
             _id: articleData._id,
-            title: articleData.title,
+            title: articleData.title || "",
             description: articleData.description || "",
-            content: articleData.content,
+            content: content,
             category: articleData.category || "",
             tags: Array.isArray(articleData.tags) ? articleData.tags : [],
             coverImage: articleData.coverImage || "",
-            status: articleData.status
+            status: articleData.status || "draft"
           })
           
           if (articleData.coverImage) {
@@ -164,27 +201,44 @@ export default function WriteArticlePage() {
     }
   }, [location.search, toast])
 
+  // Add a useEffect to check if the user has the writer role
+  useEffect(() => {
+    if (user && user.role !== 'writer' && user.role !== 'admin') {
+      toast({
+        title: "Permission Required",
+        description: "You need writer permissions to publish articles. Contact an administrator if you need access.",
+      });
+    }
+  }, [user, toast]);
+
+  // Make sure we have the latest editor content
+  const getLatestEditorContent = async () => {
+    if (editorRef.current) {
+      const editorContent = await editorRef.current.getJSON()
+      return editorContent
+    }
+    return { blocks: [] }
+  }
+
   // Save article as draft
   const handleSaveDraft = useCallback(async () => {
-    if (!article.title) {
-      toast({
-        title: "Title required",
-        description: "Please provide a title for your article before saving.",
-      })
-      return
-    }
-    
-    // Make sure we have the latest editor content
-    if (editorRef.current) {
-      const editorContent = editorRef.current.getJSON()
-      setArticle(prev => ({ ...prev, content: { type: "doc", content: editorContent.content } }))
-    }
-
+    // Create a new copy of the article regardless of edit mode
     setIsLoading(true)
     try {
+      // Make sure we have the latest editor content
+      let editorContent = article.content
+      if (editorRef.current) {
+        editorContent = await editorRef.current.getJSON()
+      }
+      
       // Prepare article data
       const articleData = {
-        ...article,
+        title: article.title,
+        description: article.description,
+        content: editorContent,
+        category: article.category,
+        tags: article.tags,
+        coverImage: article.coverImage,
         status: "draft"
       }
       
@@ -197,13 +251,8 @@ export default function WriteArticlePage() {
         articleData.coverImage = uploadResponse.file.url
       }
       
-      // Create or update article
-      let response
-      if (isEditMode) {
-        response = await apiClient.articles.update(article._id!, articleData)
-      } else {
-        response = await apiClient.articles.create(articleData)
-      }
+      // Always create a new article when saving a draft
+      const response = await apiClient.articles.create(articleData)
       
       // Update article state with response data
       setArticle({
@@ -211,14 +260,12 @@ export default function WriteArticlePage() {
         tags: Array.isArray(response.tags) ? response.tags : []
       })
       
-      // Update URL if we created a new article
-      if (!isEditMode) {
-        navigate(`/dashboard/write?id=${response._id}`, { replace: true })
-      }
+      // Update URL with the new ID
+      navigate(`/dashboard/write?id=${response._id}`, { replace: true })
       
       toast({
         title: "Draft saved",
-        description: "Your article has been saved as a draft.",
+        description: "Your article has been saved as a new draft.",
       })
     } catch (error) {
       console.error("Error saving draft:", error)
@@ -229,82 +276,136 @@ export default function WriteArticlePage() {
     } finally {
       setIsLoading(false)
     }
-  }, [article, coverImageFile, isEditMode, navigate, toast])
+  }, [article, coverImageFile, navigate, toast])
 
-  // Publish article
+  // Update the handlePublish function to check user role and handle permissions errors better
   const handlePublish = useCallback(async () => {
-    if (!article.title || !article.category) {
+    if (!user) {
       toast({
-        title: "Missing information",
-        description: "Please provide a title and category before publishing.",
-      })
-      return
+        title: "Authentication Required",
+        description: "You need to be logged in to publish articles.",
+      });
+      return;
     }
     
-    // Make sure we have the latest editor content
-    if (editorRef.current) {
-      const editorContent = editorRef.current.getJSON()
-      setArticle(prev => ({ ...prev, content: { type: "doc", content: editorContent.content } }))
+    if (user.role !== 'writer' && user.role !== 'admin') {
+      toast({
+        title: "Permission Denied",
+        description: "You need writer permissions to publish articles. Contact an administrator if you need access.",
+      });
+      return;
     }
 
-    setIsLoading(true)
+    // Validate required fields
+    const validationErrors = [];
+    
+    if (!article.title.trim()) {
+      validationErrors.push("Title is required");
+    }
+    
+    if (!article.description.trim()) {
+      validationErrors.push("Description is required");
+    }
+    
+    if (!article.category) {
+      validationErrors.push("Category is required");
+    }
+    
+    if (!coverImagePreview && !article.coverImage) {
+      validationErrors.push("Cover image is required");
+    }
+    
+    // Check content
+    let editorContent = article.content;
+    if (editorRef.current) {
+      try {
+        editorContent = await editorRef.current.getJSON();
+      } catch (editorError) {
+        console.error("Error getting editor content:", editorError);
+        // Fall back to current content in state
+      }
+    }
+    
+    if (!editorContent || !editorContent.blocks || editorContent.blocks.length === 0 || 
+        (editorContent.blocks.length === 1 && !editorContent.blocks[0].data?.text)) {
+      validationErrors.push("Content is required");
+    }
+    
+    if (validationErrors.length > 0) {
+      toast({
+        title: "Missing Information",
+        description: validationErrors.join(". "),
+      });
+      return;
+    }
+
+    setIsLoading(true);
+    
     try {
-      // Prepare article data
+      // Prepare article data - use the latest content directly
       const articleData = {
         ...article,
+        content: editorContent,
         status: "published"
-      }
+      };
       
       // Upload cover image if we have a new one
       if (coverImageFile) {
-        const formData = new FormData()
-        formData.append('image', coverImageFile)
-        
-        const uploadResponse = await apiClient.uploads.articleImage(coverImageFile)
-        articleData.coverImage = uploadResponse.file.url
+        try {
+          const uploadResponse = await apiClient.uploads.articleImage(coverImageFile);
+          articleData.coverImage = uploadResponse.file.url;
+        } catch (uploadError: any) {
+          toast({
+            title: "Upload Failed",
+            description: uploadError.message || "Failed to upload cover image.",
+          });
+          setIsLoading(false);
+          return;
+        }
       }
       
       // Create or update article
-      let response
+      let response;
+      
       if (isEditMode) {
-        response = await apiClient.articles.update(article._id!, articleData)
+        response = await apiClient.articles.update(article._id!, articleData);
       } else {
-        response = await apiClient.articles.create(articleData)
+        response = await apiClient.articles.create(articleData);
       }
       
       // Update article state with response data
       setArticle({
         ...response,
         tags: Array.isArray(response.tags) ? response.tags : []
-      })
+      });
       
       // Navigate to articles list
       toast({
-        title: "Article published!",
+        title: "Article Published!",
         description: "Your article is now live and visible to readers.",
-      })
+      });
       
       // Redirect to articles page after a short delay
       setTimeout(() => {
-        navigate('/dashboard/articles')
-      }, 1500)
-    } catch (error) {
-      console.error("Error publishing:", error)
+        navigate('/dashboard/articles');
+      }, 1500);
+    } catch (error: any) {
+      console.error("Error publishing:", error);
       toast({
-        title: "Error publishing",
-        description: "An error occurred while publishing your article.",
-      })
+        title: "Error Publishing",
+        description: error.message || "An error occurred while publishing your article.",
+      });
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }, [article, coverImageFile, isEditMode, navigate, toast])
+  }, [article, coverImageFile, coverImagePreview, isEditMode, navigate, toast, user]);
 
   // Toggle preview mode
-  const handleTogglePreview = useCallback(() => {
+  const handleTogglePreview = useCallback(async () => {
     // Make sure we have the latest editor content before switching to preview
     if (activeTab === "write" && editorRef.current) {
-      const editorContent = editorRef.current.getJSON()
-      setArticle(prev => ({ ...prev, content: { type: "doc", content: editorContent.content } }))
+      const editorContent = await editorRef.current.getJSON()
+      setArticle(prev => ({ ...prev, content: editorContent }))
     }
     
     setActiveTab(prev => prev === "write" ? "preview" : "write")
@@ -312,12 +413,31 @@ export default function WriteArticlePage() {
 
   // Categories list
   const categories = [
-    { value: "medicine", label: "Medicine" },
-    { value: "technology", label: "Technology" },
-    { value: "research", label: "Research" },
-    { value: "education", label: "Education" },
-    { value: "news", label: "News" },
-    { value: "opinion", label: "Opinion" }
+    { value: "Neurology", label: "Neurology" },
+    { value: "Cardiology", label: "Cardiology" },
+    { value: "Pulmonology", label: "Pulmonology" },
+    { value: "Genetics", label: "Genetics" },
+    { value: "Infectious Disease", label: "Infectious Disease" },
+    { value: "Immunology", label: "Immunology" },
+    { value: "Rheumatology", label: "Rheumatology" },
+    { value: "Endocrinology", label: "Endocrinology" },
+    { value: "Oncology", label: "Oncology" },
+    { value: "Pediatrics", label: "Pediatrics" },
+    { value: "Psychiatry", label: "Psychiatry" },
+    { value: "Hematology", label: "Hematology" },
+    { value: "Internal Medicine", label: "Internal Medicine" },
+    { value: "Nephrology", label: "Nephrology" },
+    { value: "Transplant Medicine", label: "Transplant Medicine" },
+    { value: "Gastroenterology", label: "Gastroenterology" },
+    { value: "Dermatology", label: "Dermatology" },
+    { value: "Obstetrics & Gynecology", label: "Obstetrics & Gynecology" },
+    { value: "Surgery", label: "Surgery" },
+    { value: "Ophthalmology", label: "Ophthalmology" },
+    { value: "Otolaryngology", label: "Otolaryngology" },
+    { value: "Dentistry", label: "Dentistry" },
+    { value: "Orthopedics", label: "Orthopedics" },
+    { value: "Public Health", label: "Public Health" },
+    { value: "Medical Technology", label: "Medical Technology" }
   ]
 
   return (
@@ -412,7 +532,7 @@ export default function WriteArticlePage() {
                     
                     <div className="space-y-2">
                       <Label>Content</Label>
-                      <TipTapEditor
+                      <RichEditor
                         ref={editorRef}
                         initialContent={article.content}
                         onChange={handleEditorChange}
@@ -442,7 +562,12 @@ export default function WriteArticlePage() {
                     )}
                     
                     <div className="prose prose-lg dark:prose-invert max-w-none">
-                      <TipTapRenderer content={article.content} />
+                      <RichEditorRenderer 
+                        content={article.content} 
+                        maxWidth="900px" 
+                        runCode={true}
+                      />
+                      <RichEditorStyle />
                     </div>
                   </div>
                 </TabsContent>
@@ -469,7 +594,7 @@ export default function WriteArticlePage() {
                   onValueChange={(value) => handleChange("category", value)}
                 >
                   <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                    <SelectValue placeholder={article.category || "Select category"} />
                   </SelectTrigger>
                   <SelectContent>
                     {categories.map((category) => (
@@ -537,11 +662,17 @@ export default function WriteArticlePage() {
                     </Button>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg">
+                  <div 
+                    className="flex items-center justify-center w-full h-40 border-2 border-dashed rounded-lg transition-colors"
+                    onDragOver={handleDragOver}
+                    onDragLeave={handleDragLeave}
+                    onDrop={handleDrop}
+                  >
                     <label className="flex flex-col items-center justify-center w-full h-full cursor-pointer">
                       <div className="flex flex-col items-center justify-center pt-5 pb-6">
                         <ImageIcon className="h-10 w-10 text-gray-400" />
-                        <p className="mt-2 text-sm text-gray-500">Click to upload cover image</p>
+                        <p className="mt-2 text-sm text-gray-500">Click or drag and drop to upload cover image</p>
+                        <p className="text-xs text-gray-500">PNG, JPG, WebP up to 10MB</p>
                       </div>
                       <input 
                         type="file" 

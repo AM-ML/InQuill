@@ -9,6 +9,7 @@ interface User {
   email: string;
   role: UserRole;
   avatar?: string;
+  emailVerified?: boolean;
 }
 
 interface AuthResponse {
@@ -23,7 +24,7 @@ const isBrowser = typeof window !== 'undefined';
 export const authService = {
   async login(email: string, password: string, rememberMe: boolean = false): Promise<AuthResponse> {
     try {
-      const data = await apiClient.post<AuthResponse>('/auth/login', {
+      const data = await apiClient.post('/auth/login', {
         email,
         password,
         rememberMe
@@ -43,7 +44,7 @@ export const authService = {
 
   async register(username: string, email: string, password: string): Promise<AuthResponse> {
     try {
-      const data = await apiClient.post<AuthResponse>('/auth/register', {
+      const data = await apiClient.post('/auth/register', {
         username,
         email,
         password
@@ -74,7 +75,7 @@ export const authService = {
 
   async getCurrentUser(): Promise<User | null> {
     try {
-      const data = await apiClient.get<{ user: User }>('/auth/me');
+      const data = await apiClient.get('/auth/me');
       return data.user;
     } catch (error) {
       console.error('Failed to get current user:', error);
@@ -85,6 +86,48 @@ export const authService = {
       }
       
       return null;
+    }
+  },
+  
+  // Email verification methods
+  async sendVerificationEmail(): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post('/auth/send-verification-email', {});
+      return response;
+    } catch (error) {
+      console.error('Failed to send verification email:', error);
+      throw error;
+    }
+  },
+
+  async verifyEmail(token: string): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post('/auth/verify-email', { token });
+      return response;
+    } catch (error) {
+      console.error('Email verification failed:', error);
+      throw error;
+    }
+  },
+
+  // Password reset methods
+  async requestPasswordReset(email: string): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post('/auth/forgot-password', { email });
+      return response;
+    } catch (error) {
+      console.error('Password reset request failed:', error);
+      throw error;
+    }
+  },
+
+  async resetPassword(token: string, password: string): Promise<{ message: string }> {
+    try {
+      const response = await apiClient.post('/auth/reset-password', { token, password });
+      return response;
+    } catch (error) {
+      console.error('Password reset failed:', error);
+      throw error;
     }
   },
   

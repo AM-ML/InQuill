@@ -8,17 +8,21 @@ type ThemeProviderProps = {
   children: React.ReactNode
   defaultTheme?: Theme
   enableSystem?: boolean
-  storageKey?: string
+  attribute?: string
 }
 
 type ThemeProviderState = {
   theme: Theme
   setTheme: (theme: Theme) => void
+  resolvedTheme: "dark" | "light" | undefined
+  systemTheme: "dark" | "light" | undefined
 }
 
 const initialState: ThemeProviderState = {
   theme: "system",
   setTheme: () => null,
+  resolvedTheme: undefined,
+  systemTheme: undefined,
 }
 
 const ThemeProviderContext = createContext<ThemeProviderState>(initialState)
@@ -30,57 +34,80 @@ export function ThemeProvider({
   children,
   defaultTheme = "system",
   enableSystem = true,
-  storageKey = "theme",
-  ...props
+  attribute = "data-theme",
 }: ThemeProviderProps) {
   const [theme, setTheme] = useState<Theme>(
-    () => {
-      if (!isBrowser) return defaultTheme
-      try {
-        const savedTheme = localStorage.getItem(storageKey) as Theme
-        return savedTheme || defaultTheme
-      } catch (error) {
-        return defaultTheme
-      }
-    }
+    () => ((isBrowser ? localStorage.getItem("theme") : null) as Theme) || defaultTheme
   )
+  const [systemTheme, setSystemTheme] = useState<"dark" | "light" | undefined>(undefined)
+  const [mounted, setMounted] = useState(false)
 
+  // Determine system theme
   useEffect(() => {
     if (!isBrowser) return
+
+    // Get system theme preference
+    const getSystemTheme = () => 
+      window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+    
+    // Set initial system theme
+    setSystemTheme(getSystemTheme())
+    
+    // Watch for changes to system theme preference
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)")
+    const handleChange = () => {
+      setSystemTheme(getSystemTheme())
+    }
+    
+    // Modern browsers
+    mediaQuery.addEventListener("change", handleChange)
+    
+    // Mark as mounted
+    setMounted(true)
+    
+    return () => {
+      mediaQuery.removeEventListener("change", handleChange)
+    }
+  }, [])
+
+  // Apply theme class to document
+  useEffect(() => {
+    if (!mounted) return
     
     const root = window.document.documentElement
-
+    
     root.classList.remove("light", "dark")
 
     if (theme === "system" && enableSystem) {
-      const systemTheme = window.matchMedia("(prefers-color-scheme: dark)")
-        .matches
-        ? "dark"
-        : "light"
-
+      if (!systemTheme) return
+      
       root.classList.add(systemTheme)
+      root.setAttribute(attribute, systemTheme)
       return
     }
 
     root.classList.add(theme)
-  }, [theme, enableSystem])
+    root.setAttribute(attribute, theme)
+  }, [theme, systemTheme, attribute, enableSystem, mounted])
+
+  // Calculate the resolved theme (actual theme applied)
+  const resolvedTheme = 
+    theme === "system" ? systemTheme : theme
 
   const value = {
     theme,
-    setTheme: (newTheme: Theme) => {
-      setTheme(newTheme)
+    setTheme: (theme: Theme) => {
       if (isBrowser) {
-        try {
-          localStorage.setItem(storageKey, newTheme)
-        } catch (error) {
-          console.error("Error saving theme to localStorage", error)
-        }
+        localStorage.setItem("theme", theme)
       }
+      setTheme(theme)
     },
+    resolvedTheme,
+    systemTheme
   }
 
   return (
-    <ThemeProviderContext.Provider {...props} value={value}>
+    <ThemeProviderContext.Provider value={value}>
       {children}
     </ThemeProviderContext.Provider>
   )

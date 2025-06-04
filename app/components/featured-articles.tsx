@@ -1,53 +1,35 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { motion } from "framer-motion"
 import ArticleCard from "./article-card"
+import { articleService } from "../lib/services/articleService"
+import { Loader2 } from "lucide-react"
 
 export default function FeaturedArticles() {
-  const articles = [
-    {
-      id: "1",
-      title: "New mRNA Vaccine Technology Shows Promise Against Multiple Diseases",
-      description:
-        "Researchers have developed a new mRNA vaccine platform that could potentially be used to create vaccines for a wide range of infectious diseases, including those that have historically been difficult to target.",
-      category: "Vaccines",
-      image: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.crbgroup.com%2Fwp-content%2Fuploads%2F2021%2F03%2FVaccine-photo-2.jpg&f=1&nofb=1&ipt=72600763c019f90ecfcae4d05a6852ebf52944f8898e0b2831a9e029ef1fa6a1",
-      date: "May 28, 2025",
-      readTime: "8 min read",
-      author: {
-        name: "Dr. Sarah Chen",
-        avatar: "",
-      },
-    },
-    {
-      id: "2",
-      title: "Breakthrough in Alzheimer's Research Identifies New Biomarkers",
-      description:
-        "A large-scale study has identified several new biomarkers that may help detect Alzheimer's disease years before symptoms appear, potentially opening new avenues for early intervention and treatment.",
-      category: "Neurology",
-      image: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fwww.alzsd.org%2Fwp-content%2Fuploads%2F2018%2F10%2Flatest-in-alzheimers-research.jpg&f=1&nofb=1&ipt=a10264e559f8d214e46ffe8ba555097c5f3ba6cc6fc271a010ec0c58c94b962a",
-      date: "May 25, 2025",
-      readTime: "6 min read",
-      author: {
-        name: "Dr. Michael Rodriguez",
-        avatar: "/placeholder.svg?height=40&width=40",
-      },
-    },
-    {
-      id: "3",
-      title: "Artificial Intelligence System Outperforms Radiologists in Detecting Lung Cancer",
-      description:
-        "A new AI system developed by researchers has demonstrated superior accuracy in detecting early-stage lung cancer from CT scans compared to experienced radiologists, potentially improving survival rates through earlier diagnosis.",
-      category: "AI in Medicine",
-      image: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fassets.hyscaler.com%2Fwp-content%2Fuploads-webpc%2Fuploads%2F2023%2F11%2Fai-healthcare.png.webp&f=1&nofb=1&ipt=ce8ffae9c4a2c728b72bf36d7a698dd47be03bcbdf37547ac78364081de46a7e",
-      date: "May 22, 2025",
-      readTime: "5 min read",
-      author: {
-        name: "Dr. Emily Johnson",
-        avatar: "/placeholder.svg?height=40&width=40",
-      },
-    },
-  ]
+  const [articles, setArticles] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchFeaturedArticles = async () => {
+      try {
+        setLoading(true)
+        const response = await articleService.getArticles({
+          limit: 3,
+          sort: "popular", // Assuming there's a sort parameter for popular/featured articles
+        })
+        setArticles(response.articles)
+        setLoading(false)
+      } catch (err) {
+        console.error("Failed to fetch featured articles:", err)
+        setError("Failed to load featured articles")
+        setLoading(false)
+      }
+    }
+
+    fetchFeaturedArticles()
+  }, [])
 
   return (
     <section className="py-16 md:py-24">
@@ -66,11 +48,26 @@ export default function FeaturedArticles() {
             Explore cutting-edge research and discoveries from leading medical institutions around the world.
           </p>
         </motion.div>
-        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-          {articles.map((article, index) => (
-            <ArticleCard key={article.id} article={article} index={index} />
-          ))}
-        </div>
+        
+        {loading ? (
+          <div className="flex justify-center items-center min-h-[300px]">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-500" />
+          </div>
+        ) : error ? (
+          <div className="flex justify-center items-center min-h-[300px]">
+            <p className="text-red-500">{error}</p>
+          </div>
+        ) : articles.length === 0 ? (
+          <div className="flex justify-center items-center min-h-[300px]">
+            <p className="text-muted-foreground">No featured articles available at the moment.</p>
+          </div>
+        ) : (
+          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {articles.map((article, index) => (
+              <ArticleCard key={article._id} article={article} index={index} />
+            ))}
+          </div>
+        )}
       </div>
     </section>
   )

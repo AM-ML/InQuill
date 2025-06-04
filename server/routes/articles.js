@@ -28,7 +28,11 @@ router.get('/', async (req, res) => {
       sort = 'newest',
       search = '',
       category = '',
-      tags = ''
+      tags = '',
+      authorId = '',
+      minDate = '',
+      maxDate = '',
+      exact = false
     } = req.query;
     
     // Base query - filter by status
@@ -50,14 +54,38 @@ router.get('/', async (req, res) => {
       }
     }
     
-    // Search functionality
+    // Enhanced search functionality
     if (search) {
-      query.$text = { $search: search };
+      if (exact === 'true') {
+        // Exact match search using regex with word boundaries
+        const searchRegex = new RegExp(`\\b${search.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&')}\\b`, 'i');
+        query.$or = [
+          { title: searchRegex },
+          { description: searchRegex },
+          { category: searchRegex },
+          { tags: { $in: [searchRegex] } }
+        ];
+      } else {
+        // Full-text search - make sure your MongoDB has text indexes set up
+        query.$text = { $search: search };
+        
+        // Add a score field for relevance sorting
+        if (sort === 'relevance') {
+          // This will be used for sorting by search relevance
+          sortScore = { score: { $meta: 'textScore' } };
+        }
+      }
     }
     
-    // Category filter
+    // Category filter - support for multiple categories
     if (category) {
-      query.category = category;
+      if (category.includes(',')) {
+        // Multiple categories filter
+        const categoryArray = category.split(',').map(cat => cat.trim());
+        query.category = { $in: categoryArray };
+      } else {
+        query.category = category;
+      }
     }
     
     // Tags filter (can be comma-separated)
@@ -66,19 +94,42 @@ router.get('/', async (req, res) => {
       query.tags = { $in: tagArray };
     }
     
+    // Author filter
+    if (authorId) {
+      query.author = authorId;
+    }
+    
+    // Date range filter
+    if (minDate) {
+      query.createdAt = { ...query.createdAt || {}, $gte: new Date(minDate) };
+    }
+    
+    if (maxDate) {
+      query.createdAt = { ...query.createdAt || {}, $lte: new Date(maxDate) };
+    }
+    
     // Sorting options
     const sortOptions = {
       newest: { createdAt: -1 },
       oldest: { createdAt: 1 },
       popular: { views: -1 },
-      trending: { likes: -1 }
+      trending: { likes: -1 },
+      relevance: { score: { $meta: 'textScore' } } // For relevance-based sorting
     };
     
     const sortBy = sortOptions[sort] || sortOptions.newest;
+    
+    // Prepare the query with projection
+    let articlesQuery = Article.find(query);
+    
+    // Add text score projection if doing a text search and sorting by relevance
+    if (search && sort === 'relevance' && !exact) {
+      articlesQuery = articlesQuery.select({ score: { $meta: 'textScore' } });
+    }
 
-    // Execute query with pagination
-    const articles = await Article.find(query)
-      .populate('author', 'username avatar')
+    // Execute query with pagination and populate author data
+    const articles = await articlesQuery
+      .populate('author', 'username name title avatar')
       .sort(sortBy)
       .limit(Number(limit))
       .skip((Number(page) - 1) * Number(limit));
@@ -112,11 +163,78 @@ router.get('/', async (req, res) => {
   }
 });
 
+// GET related articles
+router.get('/related', async (req, res) => {
+  try {
+    const { 
+      limit = 3, 
+      category = '', 
+      tags = '', 
+      excludeId = '' 
+    } = req.query;
+    
+    // Build query for related articles
+    const query = { status: 'published' };
+    
+    // Exclude the current article from results
+    if (excludeId) {
+      query._id = { $ne: excludeId };
+    }
+    
+    // Match by category if provided
+    if (category) {
+      query.category = category;
+    }
+    
+    // Match by tags if provided
+    if (tags) {
+      const tagArray = tags.split(',').map(tag => tag.trim());
+      query.tags = { $in: tagArray };
+    }
+    
+    // Find related articles with limit
+    let articles = await Article.find(query)
+      .populate('author', 'username name avatar')
+      .sort({ createdAt: -1 })
+      .limit(Number(limit));
+    
+    // If we don't have enough articles with strict matching,
+    // fallback to get more articles without tag/category filters
+    if (articles.length < Number(limit)) {
+      const remainingCount = Number(limit) - articles.length;
+      const existingIds = articles.map(article => article._id);
+      
+      // Query for additional articles, excluding those already found
+      const additionalQuery = { 
+        status: 'published', 
+        _id: { $nin: [...existingIds, excludeId] }
+      };
+      
+      const additionalArticles = await Article.find(additionalQuery)
+        .populate('author', 'username name avatar')
+        .sort({ createdAt: -1 })
+        .limit(remainingCount);
+      
+      // Combine the results
+      articles = [...articles, ...additionalArticles];
+    }
+    
+    res.json({
+      articles,
+      totalArticles: articles.length,
+      currentPage: 1,
+    });
+  } catch (error) {
+    console.error('Error in GET /articles/related:', error);
+    res.status(500).json({ message: 'Error fetching related articles', error: error.message });
+  }
+});
+
 // GET article by ID
 router.get('/:id', async (req, res) => {
   try {
     const article = await Article.findById(req.params.id)
-      .populate('author', 'username avatar');
+      .populate('author', 'username name title avatar');
     
     if (!article) {
       return res.status(404).json({ message: 'Article not found' });
@@ -138,7 +256,7 @@ router.get('/:id', async (req, res) => {
       article: req.params.id,
       parentComment: null // Only get top-level comments
     })
-    .populate('author', 'username avatar')
+    .populate('author', 'username name avatar')
     .sort({ createdAt: -1 });
 
     res.json({ article, comments });
@@ -315,14 +433,153 @@ router.post('/:id/like', [auth], async (req, res) => {
       return res.status(404).json({ message: 'Article not found' });
     }
     
-    // Increment like count
-    article.likes += 1;
+    // Check if user already liked this article
+    const userLiked = article.likedBy.some(userId => 
+      userId.toString() === req.user._id.toString()
+    );
+    
+    if (userLiked) {
+      // Unlike: remove user from likedBy and decrement likes
+      article.likedBy = article.likedBy.filter(
+        userId => userId.toString() !== req.user._id.toString()
+      );
+      article.likes -= 1;
+    } else {
+      // Like: add user to likedBy and increment likes
+      article.likedBy.push(req.user._id);
+      article.likes += 1;
+    }
+    
     await article.save();
     
-    res.json({ likes: article.likes });
+    res.json({ 
+      likes: article.likes,
+      userLiked: !userLiked
+    });
   } catch (error) {
     console.error('Error in POST /articles/:id/like:', error);
     res.status(500).json({ message: 'Error liking article', error: error.message });
+  }
+});
+
+// GET comments for an article
+router.get('/:id/comments', async (req, res) => {
+  try {
+    const { page = 1, limit = 10 } = req.query;
+
+    // Get top-level comments
+    const comments = await Comment.find({ 
+      article: req.params.id,
+      parentComment: null
+    })
+    .populate('author', 'username avatar title')
+    .sort({ createdAt: -1 })
+    .limit(Number(limit))
+    .skip((Number(page) - 1) * Number(limit));
+    
+    // For each comment, get replies
+    const commentsWithReplies = await Promise.all(comments.map(async (comment) => {
+      const replies = await Comment.find({ parentComment: comment._id })
+        .populate('author', 'username avatar title')
+        .sort({ createdAt: 1 });
+      
+      const commentObj = comment.toObject();
+      commentObj.replies = replies;
+      return commentObj;
+    }));
+
+    // Get total comments count for pagination
+    const count = await Comment.countDocuments({ 
+      article: req.params.id,
+      parentComment: null
+    });
+
+    res.json({
+      comments: commentsWithReplies,
+      totalComments: count,
+      totalPages: Math.ceil(count / Number(limit)),
+      currentPage: Number(page)
+    });
+  } catch (error) {
+    console.error('Error in GET /articles/:id/comments:', error);
+    res.status(500).json({ message: 'Error fetching comments', error: error.message });
+  }
+});
+
+// POST add a new comment to an article
+router.post('/:id/comments', [auth], async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Comment content is required' });
+    }
+
+    // Check if article exists
+    const article = await Article.findById(req.params.id);
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+
+    // Create new comment
+    const comment = new Comment({
+      content: content.trim(),
+      author: req.user._id,
+      article: req.params.id
+    });
+
+    await comment.save();
+
+    // Add comment to article
+    article.comments.push(comment._id);
+    await article.save();
+
+    // Populate author details
+    await comment.populate('author', 'username avatar title');
+
+    res.status(201).json(comment);
+  } catch (error) {
+    console.error('Error in POST /articles/:id/comments:', error);
+    res.status(500).json({ message: 'Error creating comment', error: error.message });
+  }
+});
+
+// POST reply to a comment
+router.post('/comments/:commentId/reply', [auth], async (req, res) => {
+  try {
+    const { content } = req.body;
+
+    if (!content || !content.trim()) {
+      return res.status(400).json({ message: 'Reply content is required' });
+    }
+
+    // Check if parent comment exists
+    const parentComment = await Comment.findById(req.params.commentId);
+    if (!parentComment) {
+      return res.status(404).json({ message: 'Comment not found' });
+    }
+
+    // Create reply comment
+    const reply = new Comment({
+      content: content.trim(),
+      author: req.user._id,
+      article: parentComment.article,
+      parentComment: parentComment._id
+    });
+
+    await reply.save();
+
+    // Add reply to parent comment
+    parentComment.replies.push(reply._id);
+    await parentComment.save();
+
+    // Populate author details
+    await reply.populate('author', 'username avatar title');
+
+    res.status(201).json(reply);
+  } catch (error) {
+    console.error('Error in POST /comments/:commentId/reply:', error);
+    res.status(500).json({ message: 'Error creating reply', error: error.message });
   }
 });
 

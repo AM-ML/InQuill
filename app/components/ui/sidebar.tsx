@@ -1,25 +1,61 @@
 "use client"
 
-import React, { createContext, useContext, useState } from "react"
+import React, { createContext, useContext, useState, useEffect } from "react"
 import { cn } from "../../lib/utils"
 
 interface SidebarContextType {
   isExpanded: boolean
+  isMobileOpen: boolean
   setIsExpanded: (value: boolean) => void
+  setIsMobileOpen: (value: boolean) => void
   toggleExpanded: () => void
+  toggleMobileOpen: () => void
 }
 
 const SidebarContext = createContext<SidebarContextType | undefined>(undefined)
 
 export function SidebarProvider({ children }: { children: React.ReactNode }) {
   const [isExpanded, setIsExpanded] = useState(true)
+  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isMobileView, setIsMobileView] = useState(false)
+
+  // Check if we're in a mobile view on initial render and window resize
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 768)
+    }
+    
+    // Initial check
+    checkMobile()
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkMobile)
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   const toggleExpanded = () => {
-    setIsExpanded((prev) => !prev)
+    if (isMobileView) {
+      setIsMobileOpen(prev => !prev)
+    } else {
+      setIsExpanded(prev => !prev)
+    }
+  }
+  
+  const toggleMobileOpen = () => {
+    setIsMobileOpen(prev => !prev)
   }
 
   return (
-    <SidebarContext.Provider value={{ isExpanded, setIsExpanded, toggleExpanded }}>
+    <SidebarContext.Provider value={{ 
+      isExpanded, 
+      isMobileOpen, 
+      setIsExpanded, 
+      setIsMobileOpen, 
+      toggleExpanded, 
+      toggleMobileOpen 
+    }}>
       {children}
     </SidebarContext.Provider>
   )
@@ -36,13 +72,35 @@ export function useSidebar() {
 interface SidebarProps extends React.HTMLAttributes<HTMLDivElement> {}
 
 export function Sidebar({ className, ...props }: SidebarProps) {
-  const { isExpanded } = useSidebar()
+  const { isExpanded, isMobileOpen } = useSidebar()
+  const [isMobileView, setIsMobileView] = useState(false)
+  
+  // Check if we're in a mobile view
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobileView(window.innerWidth < 768)
+    }
+    
+    // Initial check
+    checkMobile()
+    
+    // Add event listener for window resize
+    window.addEventListener('resize', checkMobile)
+    
+    // Cleanup
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   return (
     <aside
       className={cn(
         "group flex flex-col h-screen bg-white dark:bg-gray-950 transition-all duration-300 ease-in-out",
         isExpanded ? "w-64" : "w-20",
+        isMobileView ? (
+          isMobileOpen 
+            ? "fixed left-0 top-0 z-40 shadow-xl" 
+            : "fixed -left-full md:left-0 top-0 z-40"
+        ) : "",
         className,
       )}
       {...props}
