@@ -1,14 +1,23 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { HeroSection } from "../../components/about/hero-section"
-import { StatCounter } from "../../components/about/stat-counter"
-import { SectionReveal } from "../../components/about/section-reveal"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import { Heart, Lightbulb, Target, Award, Users, Microscope, Globe, TrendingUp } from "lucide-react"
-import { Link } from "react-router-dom"
+import { motion } from "framer-motion";
+import { HeroSection } from "../../components/about/hero-section";
+import { StatCounter } from "../../components/about/stat-counter";
+import { SectionReveal } from "../../components/about/section-reveal";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import {
+  Heart,
+  Lightbulb,
+  Target,
+  Award,
+  Users,
+  Microscope,
+  Globe,
+  TrendingUp,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function MissionPage() {
   const milestones = [
@@ -48,7 +57,7 @@ export default function MissionPage() {
       description:
         "Launched our advanced platform featuring personalized learning pathways, interactive research tools, and enhanced global collaboration features.",
     },
-  ]
+  ];
 
   const coreValues = [
     {
@@ -72,7 +81,7 @@ export default function MissionPage() {
         "We uphold the highest standards of scientific rigor and integrity in our research, ensuring reliable and impactful medical discoveries.",
       color: "purple" as const,
     },
-  ]
+  ];
 
   return (
     <div className="min-h-screen">
@@ -98,14 +107,21 @@ export default function MissionPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4 text-blue-600 border-blue-200">
+              <Badge
+                variant="outline"
+                className="mb-4 text-blue-600 border-blue-200"
+              >
                 Our Vision
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Transforming Healthcare Through Knowledge</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Transforming Healthcare Through Knowledge
+              </h2>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                We envision a world where medical research transcends boundaries, empowering healthcare professionals
-                with cutting-edge knowledge and tools to provide optimal patient care. Our commitment extends beyond
-                research to creating lasting impact in global health outcomes.
+                We envision a world where medical research transcends
+                boundaries, empowering healthcare professionals with
+                cutting-edge knowledge and tools to provide optimal patient
+                care. Our commitment extends beyond research to creating lasting
+                impact in global health outcomes.
               </p>
             </div>
           </SectionReveal>
@@ -152,12 +168,18 @@ export default function MissionPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4 text-purple-600 border-purple-200">
+              <Badge
+                variant="outline"
+                className="mb-4 text-purple-600 border-purple-200"
+              >
                 Core Values
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">The Principles That Guide Us</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                The Principles That Guide Us
+              </h2>
               <p className="text-xl text-muted-foreground">
-                Our values shape every aspect of our work and define our approach to medical research and collaboration.
+                Our values shape every aspect of our work and define our
+                approach to medical research and collaboration.
               </p>
             </div>
           </SectionReveal>
@@ -172,10 +194,16 @@ export default function MissionPage() {
                       whileHover={{ scale: 1.1, rotate: 5 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div className={`text-${value.color}-600 dark:text-${value.color}-400`}>{value.icon}</div>
+                      <div
+                        className={`text-${value.color}-600 dark:text-${value.color}-400`}
+                      >
+                        {value.icon}
+                      </div>
                     </motion.div>
                     <h3 className="text-2xl font-bold mb-4">{value.title}</h3>
-                    <p className="text-muted-foreground leading-relaxed">{value.description}</p>
+                    <p className="text-muted-foreground leading-relaxed">
+                      {value.description}
+                    </p>
                   </CardContent>
                 </Card>
               </SectionReveal>
@@ -189,13 +217,18 @@ export default function MissionPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-3xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4 text-green-600 border-green-200">
+              <Badge
+                variant="outline"
+                className="mb-4 text-green-600 border-green-200"
+              >
                 Milestones
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Our Journey of Impact</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Our Journey of Impact
+              </h2>
               <p className="text-xl text-muted-foreground">
-                Key achievements that mark our evolution from a small research initiative to a global healthcare
-                innovation leader.
+                Key achievements that mark our evolution from a small research
+                initiative to a global healthcare innovation leader.
               </p>
             </div>
           </SectionReveal>
@@ -215,7 +248,9 @@ export default function MissionPage() {
                         transition={{ duration: 0.2 }}
                       >
                         <div className="h-16 w-16 rounded-full bg-gradient-to-r from-blue-600 to-purple-600 border-4 border-white dark:border-gray-900 flex items-center justify-center shadow-lg">
-                          <span className="text-white font-bold text-sm">{milestone.year.slice(-2)}</span>
+                          <span className="text-white font-bold text-sm">
+                            {milestone.year.slice(-2)}
+                          </span>
                         </div>
                       </motion.div>
 
@@ -224,8 +259,12 @@ export default function MissionPage() {
                           <Badge variant="outline" className="mb-3 font-mono">
                             {milestone.year}
                           </Badge>
-                          <h3 className="text-xl font-bold mb-3">{milestone.title}</h3>
-                          <p className="text-muted-foreground leading-relaxed">{milestone.description}</p>
+                          <h3 className="text-xl font-bold mb-3">
+                            {milestone.title}
+                          </h3>
+                          <p className="text-muted-foreground leading-relaxed">
+                            {milestone.description}
+                          </p>
                         </CardContent>
                       </Card>
                     </div>
@@ -243,13 +282,19 @@ export default function MissionPage() {
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <SectionReveal direction="left">
               <div>
-                <Badge variant="outline" className="mb-4 text-blue-600 border-blue-200">
+                <Badge
+                  variant="outline"
+                  className="mb-4 text-blue-600 border-blue-200"
+                >
                   Strategic Goals
                 </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Shaping the Future of Healthcare</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Shaping the Future of Healthcare
+                </h2>
                 <p className="text-xl text-muted-foreground mb-8">
-                  Our roadmap for the next decade focuses on expanding access, accelerating innovation, and empowering
-                  the next generation of medical professionals.
+                  Our roadmap for the next decade focuses on expanding access,
+                  accelerating innovation, and empowering the next generation of
+                  medical professionals.
                 </p>
 
                 <div className="space-y-6">
@@ -282,11 +327,17 @@ export default function MissionPage() {
                       transition={{ duration: 0.5, delay: index * 0.1 }}
                     >
                       <div className="p-2 rounded-full bg-blue-100 dark:bg-blue-900/30 h-fit">
-                        <div className="text-blue-600 dark:text-blue-400">{goal.icon}</div>
+                        <div className="text-blue-600 dark:text-blue-400">
+                          {goal.icon}
+                        </div>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold mb-2">{goal.title}</h3>
-                        <p className="text-muted-foreground leading-relaxed">{goal.description}</p>
+                        <h3 className="text-lg font-semibold mb-2">
+                          {goal.title}
+                        </h3>
+                        <p className="text-muted-foreground leading-relaxed">
+                          {goal.description}
+                        </p>
                       </div>
                     </motion.div>
                   ))}
@@ -298,9 +349,9 @@ export default function MissionPage() {
               <div className="relative">
                 <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
                 <motion.img
-                  src="https://images.unsplash.com/photo-1586893079425-37b1d25e92f9?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+                  src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fas2.ftcdn.net%2Fjpg%2F08%2F26%2F83%2F53%2F1000_F_826835378_mmDvuteLJv4a2AR30uvvQnCYxkWDpZQU.jpg&f=1&nofb=1&ipt=7640cccb230d1f863d04193f76c3a46ca20b8c2c868b9bdec2fd282775016f2a"
                   alt="Strategic Goals Visualization"
-                  className="rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800"
+                  className="rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 align-center my-auto aspect-[11/9] mt-8  object-cover "
                   whileHover={{ scale: 1.02, rotate: 1 }}
                   transition={{ duration: 0.3 }}
                 />
@@ -315,10 +366,12 @@ export default function MissionPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-3xl mx-auto">
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Join Our Mission</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Join Our Mission
+              </h2>
               <p className="text-xl text-muted-foreground mb-8">
-                Be part of our global community working to advance medical knowledge and improve healthcare outcomes for
-                all.
+                Be part of our global community working to advance medical
+                knowledge and improve healthcare outcomes for all.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Button
@@ -338,5 +391,6 @@ export default function MissionPage() {
         </div>
       </section>
     </div>
-  )
-} 
+  );
+}
+

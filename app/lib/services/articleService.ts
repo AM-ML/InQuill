@@ -46,6 +46,7 @@ interface ArticlesParams {
   minDate?: string; // Filter by minimum date
   maxDate?: string; // Filter by maximum date
   exact?: boolean; // Whether to use exact matching (instead of fuzzy search)
+  favoritesOnly?: boolean; // Filter to show only favorited articles
 }
 
 export const articleService = {
@@ -84,6 +85,7 @@ export const articleService = {
       if (params.authorId) searchParams.append('authorId', params.authorId);
       if (params.minDate) searchParams.append('minDate', params.minDate);
       if (params.maxDate) searchParams.append('maxDate', params.maxDate);
+      if (params.favoritesOnly) searchParams.append('favoritesOnly', 'true');
       
       queryParams = `?${searchParams.toString()}`;
     }
@@ -254,6 +256,33 @@ export const articleService = {
     return response.json();
   },
   
+  async favoriteArticle(id: string): Promise<{ favorited: boolean }> {
+    const response = await fetch(
+      `${API_URL}/articles/${id}/favorite`,
+      {
+        method: 'POST',
+        credentials: 'include'
+      }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to favorite article');
+    }
+    return response.json();
+  },
+
+  async checkFavoriteStatus(id: string): Promise<{ favorited: boolean }> {
+    const response = await fetch(
+      `${API_URL}/articles/${id}/favorite`,
+      {
+        credentials: 'include'
+      }
+    );
+    if (!response.ok) {
+      throw new Error('Failed to check favorite status');
+    }
+    return response.json();
+  },
+
   async getArticleComments(id: string, page = 1): Promise<any> {
     const response = await fetch(
       `${API_URL}/articles/${id}/comments?page=${page}`,
@@ -266,7 +295,7 @@ export const articleService = {
     }
     return response.json();
   },
-  
+
   async addComment(articleId: string, content: string): Promise<any> {
     const response = await fetch(
       `${API_URL}/articles/${articleId}/comments`,
@@ -280,15 +309,14 @@ export const articleService = {
       }
     );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to add comment');
+      throw new Error('Failed to add comment');
     }
     return response.json();
   },
-  
+
   async replyToComment(commentId: string, content: string): Promise<any> {
     const response = await fetch(
-      `${API_URL}/articles/comments/${commentId}/reply`,
+      `${API_URL}/comments/${commentId}/replies`,
       {
         method: 'POST',
         headers: {
@@ -299,9 +327,8 @@ export const articleService = {
       }
     );
     if (!response.ok) {
-      const error = await response.json();
-      throw new Error(error.message || 'Failed to reply to comment');
+      throw new Error('Failed to add reply');
     }
     return response.json();
-  },
+  }
 }; 

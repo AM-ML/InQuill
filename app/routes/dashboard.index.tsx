@@ -55,6 +55,8 @@ export default function DashboardPage() {
   // Fetch dashboard data from API
   useEffect(() => {
     const fetchDashboardData = async () => {
+      if (!user) return;
+      
       try {
         setLoading(true)
         
@@ -63,10 +65,17 @@ export default function DashboardPage() {
         setStats(userStats);
         
         // Get recent articles
-        const articlesResponse = await articleService.getArticles({
+        const articlesParams: any = {
           limit: 5,
           sort: "newest"
-        });
+        };
+        
+        // Add author filter if user is logged in
+        if (user._id) {
+          articlesParams.authorId = user._id;
+        }
+        
+        const articlesResponse = await articleService.getArticles(articlesParams);
         setRecentArticles(articlesResponse.articles || []);
         
         // Get recent activities (would need a real API endpoint)
@@ -95,7 +104,7 @@ export default function DashboardPage() {
     }
 
     fetchDashboardData()
-  }, [])
+  }, [user])
 
   // Format numbers with proper suffixes (e.g. 1.2K)
   const formatNumber = (num: number): string => {

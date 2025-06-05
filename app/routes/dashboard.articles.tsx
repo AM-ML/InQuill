@@ -83,16 +83,25 @@ export default function MyArticlesPage() {
       } else if (activeTab === "published") {
         statusFilter = "published";
       } else if (activeTab === "drafts") {
-        statusFilter = "my-drafts";
+        statusFilter = "draft";
       }
       
       // API params
       const params: Record<string, string | number> = {
         page: currentPage,
         limit: 10,
-        status: statusFilter,
-        sort: sortBy
+        sort: sortBy,
       };
+      
+      // Add author filter if user is logged in
+      if (user?._id) {
+        params.authorId = user._id;
+      }
+      
+      // Add status filter if not "all"
+      if (statusFilter !== "all") {
+        params.status = statusFilter;
+      }
       
       // Add search query if present
       if (searchQuery) {
@@ -123,7 +132,7 @@ export default function MyArticlesPage() {
     } finally {
       setLoading(false);
     }
-  }, [activeTab, currentPage, searchQuery, selectedCategory, sortBy, categories.length, toast]);
+  }, [activeTab, currentPage, searchQuery, selectedCategory, sortBy, categories.length, toast, user?._id]);
   
   // Load articles on mount and when filters change
   useEffect(() => {
@@ -314,12 +323,14 @@ export default function MyArticlesPage() {
                 <Card key={article._id} className="overflow-hidden">
                   <div className="md:flex">
                     {article.coverImage && (
-                      <div className="md:w-1/4 aspect-[5/3]">
-                        <img 
-                          src={article.coverImage} 
-                          alt={article.title} 
-                          className="w-full h-full object-cover"
-                        />
+                      <div className="md:w-1/4">
+                        <div className="h-48 md:h-full">
+                          <img 
+                            src={article.coverImage} 
+                            alt={article.title} 
+                            className="w-full h-full object-cover"
+                          />
+                        </div>
                       </div>
                     )}
                     <div className={`p-6 flex-1 ${!article.coverImage ? 'md:w-full' : 'md:w-3/4'}`}>

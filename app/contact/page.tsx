@@ -28,6 +28,7 @@ import {
   Calendar,
 } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useToast } from "../hooks/use-toast"
 
 const contactFormSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters"),
@@ -66,6 +67,7 @@ const itemVariants = {
 export default function ContactPage() {
   const [isSubmitted, setIsSubmitted] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const { toast } = useToast()
 
   const {
     register,
@@ -81,13 +83,37 @@ export default function ContactPage() {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true)
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000))
+    try {
+      // Call the API endpoint
+      const response = await fetch(`${import.meta.env.VITE_API_URL || ''}/api/contact`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include'
+      })
 
-    console.log("Form submitted:", data)
-    setIsSubmitted(true)
-    setIsSubmitting(false)
-    reset()
+      const result = await response.json()
+
+      if (!response.ok) {
+        throw new Error(result.message || 'Failed to send message')
+      }
+
+      // Show success message
+      setIsSubmitted(true)
+      reset()
+    } catch (error) {
+      console.error('Error submitting form:', error)
+      // Show error toast
+      toast({
+        title: "Message not sent",
+        description: error instanceof Error ? error.message : "Failed to send your message. Please try again later.",
+        type: "error"
+      })
+    } finally {
+      setIsSubmitting(false)
+    }
 
     // Hide success message after 5 seconds
     setTimeout(() => setIsSubmitted(false), 5000)

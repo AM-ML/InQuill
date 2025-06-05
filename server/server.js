@@ -8,6 +8,7 @@ const authRoutes = require('./routes/auth');
 const articleRoutes = require('./routes/articles');
 const commentRoutes = require('./routes/comments');
 const uploadRoutes = require('./routes/uploads');
+const contactRoutes = require('./routes/contact');
 const { auth, authorize } = require('./middleware/auth');
 const User = require('./models/User');
 const jwt = require('jsonwebtoken');
@@ -49,6 +50,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/articles', articleRoutes);
 app.use('/api/comments', commentRoutes);
 app.use('/api/uploads', uploadRoutes);
+app.use('/api/contact', contactRoutes);
 
 // User profile update route
 app.put('/api/users/profile', auth, async (req, res) => {
@@ -153,19 +155,6 @@ app.get('/api/users/statistics', auth, async (req, res) => {
   } catch (error) {
     console.error('Error fetching user statistics:', error);
     res.status(500).json({ message: 'Error fetching statistics', error: error.message });
-  }
-});
-
-// Email verification route
-app.post('/api/users/verify-email', auth, async (req, res) => {
-  try {
-    // In a real app, you would send a verification email
-    // For now, we'll just acknowledge the request
-    
-    res.json({ message: 'Verification email sent' });
-  } catch (error) {
-    console.error('Error sending verification email:', error);
-    res.status(500).json({ message: 'Error sending verification email', error: error.message });
   }
 });
 

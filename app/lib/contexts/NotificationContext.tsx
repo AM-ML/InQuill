@@ -70,6 +70,24 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
     };
   }, [user, fetchNotifications]);
 
+  // Also check for unread count periodically (every 30 seconds)
+  useEffect(() => {
+    if (!user) return;
+    
+    const checkUnreadInterval = setInterval(async () => {
+      try {
+        const count = await notificationService.getUnreadCount();
+        setUnreadCount(count);
+      } catch (err) {
+        console.error('Failed to fetch unread count:', err);
+      }
+    }, 30000);
+    
+    return () => {
+      clearInterval(checkUnreadInterval);
+    };
+  }, [user]);
+
   const markAsRead = async (notificationId: string) => {
     try {
       await notificationService.markAsRead(notificationId);

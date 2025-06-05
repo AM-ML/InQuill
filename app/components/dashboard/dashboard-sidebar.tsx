@@ -4,7 +4,7 @@ import { useState } from "react"
 import { Link } from "react-router-dom"
 import { useLocation } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Home, User, Settings, FileText, PenTool, Bell, LogOut, ChevronRight } from "lucide-react"
+import { Home, User, Settings, FileText, PenTool, Bell, LogOut, ChevronRight, Bookmark } from "lucide-react"
 import {
   Sidebar,
   SidebarContent,
@@ -63,6 +63,12 @@ export function DashboardSidebar() {
       href: "/dashboard/articles",
       description: "Your published articles",
       badge: "12",
+    },
+    {
+      title: "Bookmarks",
+      icon: Bookmark,
+      href: "/dashboard/favorites",
+      description: "Your bookmarked articles",
     },
     {
       title: "Write Article",

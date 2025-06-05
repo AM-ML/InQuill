@@ -6,11 +6,13 @@ import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
 import { useNavigate } from "react-router-dom";
+import { useToast } from "../../hooks/use-toast";
+import { articleService } from "../../lib/services/articleService";
+import { useAuth } from "../../lib/contexts/AuthContext";
 
 interface ArticleSidebarProps {
   article: any;
   handleLikeArticle: () => void;
-  handleSaveArticle?: () => void;
   handleShareArticle?: () => void;
   userLiked: boolean;
 }
@@ -18,12 +20,40 @@ interface ArticleSidebarProps {
 export default function ArticleSidebar({
   article,
   handleLikeArticle,
-  handleSaveArticle,
   handleShareArticle,
   userLiked
 }: ArticleSidebarProps) {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("");
+  const [isFavorited, setIsFavorited] = useState(false);
+  const [favoriteLoading, setFavoriteLoading] = useState(false);
+  const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Check if article is favorited on mount
+  useEffect(() => {
+    const checkFavoriteStatus = async () => {
+      if (!user || !article?._id) return;
+      
+      try {
+        // First check if the article already has favorited status from the API
+        if (article.favorited !== undefined) {
+          setIsFavorited(article.favorited);
+          return;
+        }
+        
+        // If not, make an API call to check
+        const response = await articleService.checkFavoriteStatus(article._id);
+        setIsFavorited(response.favorited);
+      } catch (error) {
+        console.error("Error checking favorite status:", error);
+        // Default to false if there's an error
+        setIsFavorited(false);
+      }
+    };
+    
+    checkFavoriteStatus();
+  }, [article, user]);
 
   // Generate table of contents from article content
   const generateTableOfContents = () => {
@@ -106,18 +136,43 @@ export default function ArticleSidebar({
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(window.location.href);
-      // You would typically show a toast here
-      console.log('Link copied to clipboard');
+      // Show toast notification
+      toast({
+        title: "Link copied",
+        description: "Article link copied to clipboard",
+      });
     }
   };
 
-  // Handle save action
-  const handleSave = () => {
-    if (handleSaveArticle) {
-      handleSaveArticle();
-    } else {
-      // Default implementation
-      console.log('Save article for later');
+  // Handle favorite action
+  const handleFavorite = async () => {
+    if (!user) {
+      navigate('/login?redirect=' + encodeURIComponent(window.location.href));
+      return;
+    }
+
+    if (!article?._id) return;
+
+    try {
+      setFavoriteLoading(true);
+      const response = await articleService.favoriteArticle(article._id);
+      setIsFavorited(response.favorited);
+      
+      toast({
+        title: response.favorited ? "Article bookmarked" : "Bookmark removed",
+        description: response.favorited 
+          ? "Article has been bookmarked" 
+          : "Article removed from your bookmarks",
+      });
+    } catch (error) {
+      console.error("Error bookmarking article:", error);
+      toast({
+        title: "Action failed",
+        description: "Could not bookmark article. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setFavoriteLoading(false);
     }
   };
 
@@ -182,10 +237,11 @@ export default function ArticleSidebar({
             <Button 
               variant="outline" 
               className="w-full justify-start"
-              onClick={handleSave}
+              onClick={handleFavorite}
+              disabled={favoriteLoading}
             >
-              <Bookmark className="h-4 w-4 mr-2" />
-              Save for Later
+              <Bookmark className={`h-4 w-4 mr-2 ${isFavorited ? "fill-yellow-500 text-yellow-500" : ""}`} />
+              {favoriteLoading ? "Saving..." : (isFavorited ? "Remove Bookmark" : "Bookmark")}
             </Button>
             <Button 
               variant="outline" 

@@ -114,8 +114,37 @@ export const userService = {
 
   async getUserStatistics(): Promise<UserStatistics> {
     try {
+      // Call the API endpoint for user statistics
       const response = await apiClient.get('/users/statistics');
-      return response;
+      
+      // If the response has the expected structure, return it
+      if (response && 
+          typeof response.totalArticles === 'number' && 
+          typeof response.totalViews === 'number' && 
+          typeof response.totalLikes === 'number' && 
+          typeof response.totalComments === 'number') {
+        return response;
+      }
+
+      // If the endpoint doesn't support detailed statistics, try to build them from separate endpoints
+      const articlesParams = {
+        limit: 1000, // Get a large number to calculate stats
+        authorId: 'me', // Special identifier for the current user's articles
+      };
+      
+      // Get user's articles to calculate stats
+      const articlesResponse = await apiClient.articles.getAll(articlesParams);
+      const articles = articlesResponse.articles || [];
+      
+      // Calculate statistics from articles
+      const stats: UserStatistics = {
+        totalArticles: articles.length,
+        totalViews: articles.reduce((sum: number, article: any) => sum + (article.views || 0), 0),
+        totalLikes: articles.reduce((sum: number, article: any) => sum + (article.likes || 0), 0),
+        totalComments: articles.reduce((sum: number, article: any) => sum + ((article.comments?.length) || 0), 0),
+      };
+      
+      return stats;
     } catch (error) {
       console.error('Error fetching user statistics:', error);
       // Return empty statistics object as fallback

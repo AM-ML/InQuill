@@ -1,26 +1,26 @@
-"use client"
+"use client";
 
-import { motion } from "framer-motion"
-import { HeroSection } from "../../components/about/hero-section"
-import { StatCounter } from "../../components/about/stat-counter"
-import { SectionReveal } from "../../components/about/section-reveal"
-import { Button } from "../../components/ui/button"
-import { Card, CardContent } from "../../components/ui/card"
-import { Badge } from "../../components/ui/badge"
-import { Progress } from "../../components/ui/progress"
-import { 
-  Globe, 
-  BookOpen, 
-  Users, 
-  Heart, 
-  Stethoscope, 
-  Brain, 
-  Dna, 
-  Microscope, 
-  BarChart3, 
-  TrendingUp 
-} from "lucide-react"
-import { Link } from "react-router-dom"
+import { motion } from "framer-motion";
+import { HeroSection } from "../../components/about/hero-section";
+import { StatCounter } from "../../components/about/stat-counter";
+import { SectionReveal } from "../../components/about/section-reveal";
+import { Button } from "../../components/ui/button";
+import { Card, CardContent } from "../../components/ui/card";
+import { Badge } from "../../components/ui/badge";
+import { Progress } from "../../components/ui/progress";
+import {
+  Globe,
+  BookOpen,
+  Users,
+  Heart,
+  Stethoscope,
+  Brain,
+  Dna,
+  Microscope,
+  BarChart3,
+  TrendingUp,
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
 export default function ImpactPage() {
   const impactAreas = [
@@ -40,7 +40,8 @@ export default function ImpactPage() {
       citations: "38,500+",
       icon: <Brain className="h-6 w-6" />,
       color: "purple" as const,
-      description: "Groundbreaking studies in neurological disorders, brain imaging, and cognitive function research.",
+      description:
+        "Groundbreaking studies in neurological disorders, brain imaging, and cognitive function research.",
       improvement: 42,
     },
     {
@@ -59,7 +60,8 @@ export default function ImpactPage() {
       citations: "29,300+",
       icon: <Stethoscope className="h-6 w-6" />,
       color: "blue" as const,
-      description: "Innovative research in autoimmune disorders, vaccine development, and immune system modulation.",
+      description:
+        "Innovative research in autoimmune disorders, vaccine development, and immune system modulation.",
       improvement: 31,
     },
     {
@@ -68,7 +70,8 @@ export default function ImpactPage() {
       citations: "33,800+",
       icon: <Dna className="h-6 w-6" />,
       color: "green" as const,
-      description: "Cutting-edge genetic research, gene therapy developments, and personalized medicine approaches.",
+      description:
+        "Cutting-edge genetic research, gene therapy developments, and personalized medicine approaches.",
       improvement: 45,
     },
     {
@@ -81,19 +84,21 @@ export default function ImpactPage() {
         "Impactful research on global health challenges, disease prevention, and healthcare system optimization.",
       improvement: 38,
     },
-  ]
+  ];
 
   const healthcareOutcomes = [
     {
       metric: "Reduced Treatment Time",
       improvement: 35,
-      description: "Research-backed protocols have reduced average treatment times across participating hospitals.",
+      description:
+        "Research-backed protocols have reduced average treatment times across participating hospitals.",
       color: "green",
     },
     {
       metric: "Improved Diagnostic Accuracy",
       improvement: 42,
-      description: "AI-assisted diagnostic tools developed through our research have significantly improved accuracy.",
+      description:
+        "AI-assisted diagnostic tools developed through our research have significantly improved accuracy.",
       color: "blue",
     },
     {
@@ -103,7 +108,7 @@ export default function ImpactPage() {
         "Evidence-based treatment protocols have improved patient recovery rates across multiple specialties.",
       color: "purple",
     },
-  ]
+  ];
 
   return (
     <div className="min-h-screen">
@@ -130,13 +135,19 @@ export default function ImpactPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4 text-green-600 border-green-200">
+              <Badge
+                variant="outline"
+                className="mb-4 text-green-600 border-green-200"
+              >
                 Global Reach
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Worldwide Healthcare Transformation</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Worldwide Healthcare Transformation
+              </h2>
               <p className="text-xl text-muted-foreground leading-relaxed">
-                Our research and educational resources reach healthcare professionals across the globe, making a
-                measurable difference in patient care and medical outcomes in every continent.
+                Our research and educational resources reach healthcare
+                professionals across the globe, making a measurable difference
+                in patient care and medical outcomes in every continent.
               </p>
             </div>
           </SectionReveal>
@@ -184,13 +195,19 @@ export default function ImpactPage() {
           <div className="grid gap-12 lg:grid-cols-2 items-center">
             <SectionReveal direction="left">
               <div>
-                <Badge variant="outline" className="mb-4 text-blue-600 border-blue-200">
+                <Badge
+                  variant="outline"
+                  className="mb-4 text-blue-600 border-blue-200"
+                >
                   Research Breakthroughs
                 </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Transforming Medical Practice</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Transforming Medical Practice
+                </h2>
                 <p className="text-xl text-muted-foreground mb-8">
-                  Our platform has facilitated groundbreaking discoveries that have transformed medical practice and
-                  significantly improved patient care outcomes worldwide.
+                  Our platform has facilitated groundbreaking discoveries that
+                  have transformed medical practice and significantly improved
+                  patient care outcomes worldwide.
                 </p>
 
                 <div className="space-y-6">
@@ -228,13 +245,19 @@ export default function ImpactPage() {
                       <div
                         className={`p-2 rounded-full bg-${breakthrough.color}-50 dark:bg-${breakthrough.color}-900/30 h-fit`}
                       >
-                        <div className={`text-${breakthrough.color}-600 dark:text-${breakthrough.color}-400`}>
+                        <div
+                          className={`text-${breakthrough.color}-600 dark:text-${breakthrough.color}-400`}
+                        >
                           {breakthrough.icon}
                         </div>
                       </div>
                       <div>
-                        <h3 className="text-lg font-semibold mb-2">{breakthrough.title}</h3>
-                        <p className="text-muted-foreground leading-relaxed">{breakthrough.description}</p>
+                        <h3 className="text-lg font-semibold mb-2">
+                          {breakthrough.title}
+                        </h3>
+                        <p className="text-muted-foreground leading-relaxed">
+                          {breakthrough.description}
+                        </p>
                       </div>
                     </motion.div>
                   ))}
@@ -248,7 +271,7 @@ export default function ImpactPage() {
                 <motion.img
                   src="https://images.unsplash.com/photo-1532938911079-1b06ac7ceec7?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1332&q=80"
                   alt="Medical Research Breakthroughs"
-                  className="rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800"
+                  className="aspect-[14/9] object-cover mt-8 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800"
                   whileHover={{ scale: 1.02, rotate: -1 }}
                   transition={{ duration: 0.3 }}
                 />
@@ -263,13 +286,19 @@ export default function ImpactPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4 text-purple-600 border-purple-200">
+              <Badge
+                variant="outline"
+                className="mb-4 text-purple-600 border-purple-200"
+              >
                 Impact by Specialty
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Advancing Every Medical Field</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Advancing Every Medical Field
+              </h2>
               <p className="text-xl text-muted-foreground">
-                Our research has made significant contributions across various medical specialties, driving innovation
-                and improving outcomes in each field.
+                Our research has made significant contributions across various
+                medical specialties, driving innovation and improving outcomes
+                in each field.
               </p>
             </div>
           </SectionReveal>
@@ -279,32 +308,52 @@ export default function ImpactPage() {
               <SectionReveal key={area.specialty} delay={index * 0.1}>
                 <Card className="h-full hover:shadow-lg transition-all duration-300 border-2 hover:border-blue-200 dark:hover:border-blue-800">
                   <CardContent className="p-6">
-                    <div className={`p-3 rounded-full bg-${area.color}-50 dark:bg-${area.color}-900/30 w-fit mb-4`}>
-                      <div className={`text-${area.color}-600 dark:text-${area.color}-400`}>{area.icon}</div>
+                    <div
+                      className={`p-3 rounded-full bg-${area.color}-50 dark:bg-${area.color}-900/30 w-fit mb-4`}
+                    >
+                      <div
+                        className={`text-${area.color}-600 dark:text-${area.color}-400`}
+                      >
+                        {area.icon}
+                      </div>
                     </div>
                     <h3 className="text-xl font-bold mb-2">{area.specialty}</h3>
-                    <p className="text-muted-foreground mb-4 text-sm leading-relaxed">{area.description}</p>
+                    <p className="text-muted-foreground mb-4 text-sm leading-relaxed">
+                      {area.description}
+                    </p>
 
                     <div className="space-y-3">
                       <div className="flex justify-between items-center">
                         <div>
-                          <p className={`text-lg font-bold text-${area.color}-600 dark:text-${area.color}-400`}>
+                          <p
+                            className={`text-lg font-bold text-${area.color}-600 dark:text-${area.color}-400`}
+                          >
                             {area.publications}
                           </p>
-                          <p className="text-xs text-muted-foreground">Publications</p>
+                          <p className="text-xs text-muted-foreground">
+                            Publications
+                          </p>
                         </div>
                         <div>
-                          <p className={`text-lg font-bold text-${area.color}-600 dark:text-${area.color}-400`}>
+                          <p
+                            className={`text-lg font-bold text-${area.color}-600 dark:text-${area.color}-400`}
+                          >
                             {area.citations}
                           </p>
-                          <p className="text-xs text-muted-foreground">Citations</p>
+                          <p className="text-xs text-muted-foreground">
+                            Citations
+                          </p>
                         </div>
                       </div>
 
                       <div>
                         <div className="flex justify-between items-center mb-1">
-                          <span className="text-sm font-medium">Patient Outcome Improvement</span>
-                          <Badge variant="secondary">+{area.improvement}%</Badge>
+                          <span className="text-sm font-medium">
+                            Patient Outcome Improvement
+                          </span>
+                          <Badge variant="secondary">
+                            +{area.improvement}%
+                          </Badge>
                         </div>
                         <Progress value={area.improvement} className="h-2" />
                       </div>
@@ -325,7 +374,7 @@ export default function ImpactPage() {
               <div className="relative">
                 <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-r from-blue-400/20 to-purple-400/20 rounded-full blur-3xl"></div>
                 <motion.img
-                  src="https://images.unsplash.com/photo-1576091160550-2173dba999ef?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=2070&q=80"
+                  src="https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fimg.freepik.com%2Fpremium-photo%2Fblack-people-consulting-pediatrician-family-doctor-patient-healthcare-service-medical-help-wellness-checkup-clinic-surgery-portrait-smile-happy-trust-african-gp-with-healthy-advice_590464-80769.jpg%3Fw%3D900&f=1&nofb=1&ipt=008176413316dab34feb720f9ec63833b892b734e282044a9424f53fcbefb6e0"
                   alt="Healthcare Outcomes Visualization"
                   className="rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800"
                   whileHover={{ scale: 1.02, rotate: 1 }}
@@ -336,13 +385,19 @@ export default function ImpactPage() {
 
             <SectionReveal direction="left" delay={0.2}>
               <div>
-                <Badge variant="outline" className="mb-4 text-blue-600 border-blue-200">
+                <Badge
+                  variant="outline"
+                  className="mb-4 text-blue-600 border-blue-200"
+                >
                   Healthcare Outcomes
                 </Badge>
-                <h2 className="text-3xl md:text-4xl font-bold mb-6">Measurable Patient Impact</h2>
+                <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                  Measurable Patient Impact
+                </h2>
                 <p className="text-xl text-muted-foreground mb-8">
-                  Our research has directly contributed to improved patient care and healthcare outcomes worldwide, with
-                  measurable improvements across key metrics.
+                  Our research has directly contributed to improved patient care
+                  and healthcare outcomes worldwide, with measurable
+                  improvements across key metrics.
                 </p>
 
                 <div className="space-y-6">
@@ -366,12 +421,16 @@ export default function ImpactPage() {
                         <motion.div
                           className={`h-full bg-gradient-to-r from-${outcome.color}-600 to-${outcome.color}-400`}
                           initial={{ width: 0 }}
-                          whileInView={{ width: `${outcome.improvement + 20}%` }}
+                          whileInView={{
+                            width: `${outcome.improvement + 20}%`,
+                          }}
                           viewport={{ once: true }}
                           transition={{ duration: 1, delay: 0.5 + index * 0.1 }}
                         />
                       </div>
-                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">{outcome.description}</p>
+                      <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                        {outcome.description}
+                      </p>
                     </motion.div>
                   ))}
                 </div>
@@ -386,13 +445,19 @@ export default function ImpactPage() {
         <div className="container px-4 md:px-6">
           <SectionReveal>
             <div className="text-center max-w-4xl mx-auto mb-16">
-              <Badge variant="outline" className="mb-4 text-amber-600 border-amber-200">
+              <Badge
+                variant="outline"
+                className="mb-4 text-amber-600 border-amber-200"
+              >
                 Research Growth
               </Badge>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Accelerating Medical Discovery</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Accelerating Medical Discovery
+              </h2>
               <p className="text-xl text-muted-foreground">
-                Our platform continues to expand its impact on medical research and healthcare innovation, with
-                exponential growth in research output and global reach.
+                Our platform continues to expand its impact on medical research
+                and healthcare innovation, with exponential growth in research
+                output and global reach.
               </p>
             </div>
           </SectionReveal>
@@ -401,7 +466,10 @@ export default function ImpactPage() {
             <Card className="max-w-4xl mx-auto">
               <CardContent className="p-8">
                 <div className="flex items-center justify-center mb-8">
-                  <motion.div whileHover={{ scale: 1.1, rotate: 5 }} transition={{ duration: 0.2 }}>
+                  <motion.div
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                    transition={{ duration: 0.2 }}
+                  >
                     <BarChart3 className="h-12 w-12 text-blue-600 dark:text-blue-400" />
                   </motion.div>
                 </div>
@@ -433,14 +501,18 @@ export default function ImpactPage() {
 
                 <div className="flex justify-around mt-4">
                   {[2020, 2021, 2022, 2023, 2024, 2025].map((year) => (
-                    <div key={year} className="text-sm text-muted-foreground font-medium">
+                    <div
+                      key={year}
+                      className="text-sm text-muted-foreground font-medium"
+                    >
                       {year}
                     </div>
                   ))}
                 </div>
 
                 <p className="text-center text-muted-foreground mt-6">
-                  Annual growth in research publications facilitated through our platform
+                  Annual growth in research publications facilitated through our
+                  platform
                 </p>
               </CardContent>
             </Card>
@@ -460,10 +532,13 @@ export default function ImpactPage() {
               >
                 <TrendingUp className="h-12 w-12" />
               </motion.div>
-              <h2 className="text-3xl md:text-4xl font-bold mb-6">Be Part of Our Impact</h2>
+              <h2 className="text-3xl md:text-4xl font-bold mb-6">
+                Be Part of Our Impact
+              </h2>
               <p className="text-xl mb-8 text-blue-100">
-                Join thousands of healthcare professionals and researchers who are using our platform to advance medical
-                knowledge and improve patient outcomes worldwide.
+                Join thousands of healthcare professionals and researchers who
+                are using our platform to advance medical knowledge and improve
+                patient outcomes worldwide.
               </p>
               <div className="flex flex-wrap justify-center gap-4">
                 <Button size="lg" variant="secondary">
@@ -482,5 +557,6 @@ export default function ImpactPage() {
         </div>
       </section>
     </div>
-  )
-} 
+  );
+}
+

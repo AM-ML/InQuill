@@ -3,6 +3,7 @@ const router = express.Router();
 const { body, validationResult } = require('express-validator');
 const Article = require('../models/Article');
 const Comment = require('../models/Comment');
+const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
 const { uploadBase64Image } = require('../utils/cloudinaryConfig');
 
@@ -32,8 +33,15 @@ router.get('/', async (req, res) => {
       authorId = '',
       minDate = '',
       maxDate = '',
-      exact = false
+      exact = false,
+      favoritesOnly = false
     } = req.query;
+    
+    // Check if we need to filter by favorites
+    if (favoritesOnly === 'true' && req.user) {
+      // Redirect to the favorites endpoint
+      return res.redirect(`/api/articles/favorites?page=${page}&limit=${limit}&sort=${sort}&search=${search}&category=${category}`);
+    }
     
     // Base query - filter by status
     let query = { status };
@@ -149,8 +157,23 @@ router.get('/', async (req, res) => {
       { $limit: 10 }
     ]);
 
+    // Add favorited status for each article if user is logged in
+    let articlesWithFavorited = articles;
+    if (req.user) {
+      const user = await User.findById(req.user._id);
+      if (user) {
+        articlesWithFavorited = articles.map(article => {
+          const articleObj = article.toObject();
+          articleObj.favorited = user.favorites.some(
+            favoriteId => favoriteId.toString() === article._id.toString()
+          );
+          return articleObj;
+        });
+      }
+    }
+
     res.json({
-      articles,
+      articles: articlesWithFavorited,
       totalArticles: count,
       totalPages: Math.ceil(count / Number(limit)),
       currentPage: Number(page),
@@ -230,6 +253,86 @@ router.get('/related', async (req, res) => {
   }
 });
 
+// GET user's favorite articles
+router.get('/favorites', [auth], async (req, res) => {
+  try {
+    const { 
+      page = 1, 
+      limit = 10, 
+      sort = 'newest',
+      search = '',
+      category = ''
+    } = req.query;
+    
+    // Get user with populated favorites
+    const user = await User.findById(req.user._id).populate({
+      path: 'favorites',
+      populate: {
+        path: 'author',
+        select: 'username name title avatar'
+      }
+    });
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    let favorites = user.favorites || [];
+    
+    // Apply search filter if provided
+    if (search) {
+      const searchRegex = new RegExp(search, 'i');
+      favorites = favorites.filter(article => 
+        searchRegex.test(article.title) || 
+        (article.description && searchRegex.test(article.description)) ||
+        (article.category && searchRegex.test(article.category))
+      );
+    }
+    
+    // Apply category filter if provided
+    if (category) {
+      favorites = favorites.filter(article => article.category === category);
+    }
+    
+    // Apply sorting
+    switch (sort) {
+      case 'oldest':
+        favorites.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+        break;
+      case 'popular':
+        favorites.sort((a, b) => b.views - a.views);
+        break;
+      case 'trending':
+        favorites.sort((a, b) => b.likes - a.likes);
+        break;
+      default: // 'newest'
+        favorites.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    }
+    
+    // Get total count
+    const count = favorites.length;
+    
+    // Apply pagination
+    const startIndex = (Number(page) - 1) * Number(limit);
+    const endIndex = startIndex + Number(limit);
+    favorites = favorites.slice(startIndex, endIndex);
+    
+    // Get available categories from favorites
+    const categories = [...new Set(user.favorites.map(article => article.category).filter(Boolean))];
+    
+    res.json({
+      articles: favorites,
+      totalArticles: count,
+      totalPages: Math.ceil(count / Number(limit)),
+      currentPage: Number(page),
+      categories
+    });
+  } catch (error) {
+    console.error('Error in GET /articles/favorites:', error);
+    res.status(500).json({ message: 'Error fetching favorite articles', error: error.message });
+  }
+});
+
 // GET article by ID
 router.get('/:id', async (req, res) => {
   try {
@@ -259,10 +362,45 @@ router.get('/:id', async (req, res) => {
     .populate('author', 'username name avatar')
     .sort({ createdAt: -1 });
 
-    res.json({ article, comments });
+    // Check if the current user has favorited this article
+    let favorited = false;
+    if (req.user) {
+      const user = await User.findById(req.user._id);
+      if (user) {
+        favorited = user.favorites.some(
+          favoriteId => favoriteId.toString() === article._id.toString()
+        );
+      }
+    }
+
+    // Convert to object to add favorited property
+    const articleObj = article.toObject();
+    articleObj.favorited = favorited;
+
+    res.json({ article: articleObj, comments });
   } catch (error) {
     console.error('Error in GET /articles/:id:', error);
     res.status(500).json({ message: 'Error fetching article', error: error.message });
+  }
+});
+
+// GET check if article is favorited by current user
+router.get('/:id/favorite', [auth], async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    const isFavorited = user.favorites.some(
+      favoriteId => favoriteId.toString() === req.params.id
+    );
+    
+    res.json({ favorited: isFavorited });
+  } catch (error) {
+    console.error('Error in GET /articles/:id/favorite:', error);
+    res.status(500).json({ message: 'Error checking favorite status', error: error.message });
   }
 });
 
@@ -580,6 +718,55 @@ router.post('/comments/:commentId/reply', [auth], async (req, res) => {
   } catch (error) {
     console.error('Error in POST /comments/:commentId/reply:', error);
     res.status(500).json({ message: 'Error creating reply', error: error.message });
+  }
+});
+
+// POST favorite/unfavorite an article
+router.post('/:id/favorite', [auth], async (req, res) => {
+  try {
+    const article = await Article.findById(req.params.id);
+    
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+    
+    const user = await User.findById(req.user._id);
+    
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+    
+    // Check if article is already in user's favorites
+    const isFavorited = user.favorites.some(
+      favoriteId => favoriteId.toString() === article._id.toString()
+    );
+    
+    if (isFavorited) {
+      // Remove from favorites
+      user.favorites = user.favorites.filter(
+        favoriteId => favoriteId.toString() !== article._id.toString()
+      );
+      
+      // Remove user from article's favoritedBy
+      article.favoritedBy = article.favoritedBy.filter(
+        userId => userId.toString() !== user._id.toString()
+      );
+    } else {
+      // Add to favorites
+      user.favorites.push(article._id);
+      
+      // Add user to article's favoritedBy
+      article.favoritedBy.push(user._id);
+    }
+    
+    await Promise.all([user.save(), article.save()]);
+    
+    res.json({ 
+      favorited: !isFavorited
+    });
+  } catch (error) {
+    console.error('Error in POST /articles/:id/favorite:', error);
+    res.status(500).json({ message: 'Error favoriting article', error: error.message });
   }
 });
 

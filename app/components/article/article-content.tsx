@@ -1,4 +1,4 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { Calendar, Clock, Eye, Heart, Share2, Bookmark, Award } from "lucide-react";
 import { Button } from "../ui/button";
@@ -8,6 +8,7 @@ import RichEditorRenderer, { RichEditorStyle } from "../editor/rich-editor-rende
 import { useAuth } from "../../lib/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { articleService } from "../../lib/services/articleService";
+import { useToast } from "../../hooks/use-toast";
 
 interface ArticleContentProps {
   article: any;
@@ -24,9 +25,16 @@ export default function ArticleContent({
 }: ArticleContentProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { toast } = useToast();
+  const [isBookmarked, setIsBookmarked] = useState(false);
+  const [bookmarkLoading, setBookmarkLoading] = useState(false);
 
   useEffect(() => {
     console.log(article);
+    // Set bookmark status based on article data
+    if (article?.favorited !== undefined) {
+      setIsBookmarked(article.favorited);
+    }
   }, [article]);
 
   const handleShare = () => {
@@ -39,14 +47,42 @@ export default function ArticleContent({
     } else {
       // Fallback for browsers that don't support Web Share API
       navigator.clipboard.writeText(window.location.href);
-      // You would typically show a toast here
-      console.log('Link copied to clipboard');
+      toast({
+        title: "Link copied",
+        description: "Article link copied to clipboard",
+      });
     }
   };
 
-  const handleSave = () => {
-    // Implement bookmark/save functionality
-    console.log('Save article for later');
+  const handleBookmark = async () => {
+    if (!user) {
+      navigate('/login?redirect=' + encodeURIComponent(window.location.href));
+      return;
+    }
+
+    if (!article?._id) return;
+
+    try {
+      setBookmarkLoading(true);
+      const response = await articleService.favoriteArticle(article._id);
+      setIsBookmarked(response.favorited);
+      
+      toast({
+        title: response.favorited ? "Article bookmarked" : "Bookmark removed",
+        description: response.favorited 
+          ? "Article has been bookmarked" 
+          : "Article removed from your bookmarks",
+      });
+    } catch (error) {
+      console.error("Error bookmarking article:", error);
+      toast({
+        title: "Action failed",
+        description: "Could not bookmark article. Please try again.",
+        type: "error"
+      });
+    } finally {
+      setBookmarkLoading(false);
+    }
   };
 
   // Format date
@@ -175,9 +211,15 @@ export default function ArticleContent({
               <Share2 className="h-4 w-4 mr-1" />
               Share
             </Button>
-            <Button variant="outline" size="sm" onClick={handleSave}>
-              <Bookmark className="h-4 w-4 mr-1" />
-              Save
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBookmark}
+              disabled={bookmarkLoading}
+              className={isBookmarked ? "bg-yellow-50 text-yellow-600 border-yellow-300 dark:bg-yellow-900/20 dark:border-yellow-700" : ""}
+            >
+              <Bookmark className={`h-4 w-4 mr-1 ${isBookmarked ? "fill-yellow-500 text-yellow-500" : ""}`} />
+              {bookmarkLoading ? "Saving..." : (isBookmarked ? "Bookmarked" : "Bookmark")}
             </Button>
           </div>
         </div>

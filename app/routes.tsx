@@ -65,6 +65,7 @@ const Dashboard = React.lazy(() => import('./routes/dashboard'));
 const DashboardIndex = React.lazy(() => import('./routes/dashboard.index'));
 const DashboardProfile = React.lazy(() => import('./routes/dashboard.profile'));
 const DashboardSettings = React.lazy(() => import('./routes/dashboard.settings'));
+const DashboardFavorites = React.lazy(() => import('./routes/dashboard.favorites'));
 const DashboardArticles = React.lazy(() => import('./routes/dashboard.articles'));
 const DashboardWrite = React.lazy(() => import('./routes/dashboard.write'));
 const Articles = React.lazy(() => import('./routes/articles'));
@@ -109,6 +110,7 @@ const AppRoutes = () => {
           <Route index element={withErrorAndSuspense(DashboardIndex)} />
           <Route path="profile" element={withErrorAndSuspense(DashboardProfile)} />
           <Route path="settings" element={withErrorAndSuspense(DashboardSettings)} />
+          <Route path="favorites" element={withErrorAndSuspense(DashboardFavorites)} />
           <Route path="articles" element={withErrorAndSuspense(DashboardArticles)} />
           <Route path="write" element={withErrorAndSuspense(DashboardWrite)} />
         </Route>

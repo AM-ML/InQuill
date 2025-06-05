@@ -45,6 +45,14 @@ const userSchema = new mongoose.Schema({
     // Only writers and admins typically have titles
     default: ''
   },
+  emailVerified: {
+    type: Boolean,
+    default: false
+  },
+  favorites: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Article'
+  }],
   createdAt: {
     type: Date,
     default: Date.now

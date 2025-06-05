@@ -27,6 +27,7 @@ interface Article {
   likes: number;
   views?: number;
   likedBy?: string[];
+  favorited?: boolean;
 }
 
 interface Comment {
@@ -83,9 +84,8 @@ export function ArticleDetail({ id }: ArticleDetailProps) {
   useEffect(() => {
     if (id) {
       fetchArticle();
-      console.log(article);
     }
-  }, [id]);
+  }, [id, user]);
   
   // Fetch comments when page changes
   useEffect(() => {
@@ -106,6 +106,18 @@ export function ArticleDetail({ id }: ArticleDetailProps) {
         articleData = response.article;
       } else {
         articleData = response;
+      }
+      
+      // If the favorited property is not set and user is logged in, check favorite status
+      if (user && articleData.favorited === undefined) {
+        try {
+          const favoriteResponse = await articleService.checkFavoriteStatus(id);
+          articleData.favorited = favoriteResponse.favorited;
+        } catch (err) {
+          console.error("Error checking favorite status:", err);
+          // Default to false if there's an error
+          articleData.favorited = false;
+        }
       }
       
       setArticle(articleData);
