@@ -1,5 +1,5 @@
-import React from 'react';
-import { Navigate, useLocation } from 'react-router-dom';
+import React from "react";
+import { Navigate, useLocation } from "react-router-dom";
 
 const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   const location = useLocation();
@@ -9,16 +9,19 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   React.useEffect(() => {
     const checkAuth = async () => {
       try {
-        const response = await fetch('http://localhost:3000/api/auth/me', {
-          credentials: 'include'
-        });
-        
+        const response = await fetch(
+          import.meta.env.VITE_API_URL + "/auth/me",
+          {
+            credentials: "include",
+          }
+        );
+
         if (response.ok) {
           const data = await response.json();
           setUser(data.user);
         }
       } catch (error) {
-        console.error('Auth check failed:', error);
+        console.error("Auth check failed:", error);
       } finally {
         setIsLoading(false);
       }
@@ -48,4 +51,5 @@ const ProtectedRoute = ({ children, allowedRoles = [] }) => {
   return children;
 };
 
-export default ProtectedRoute; 
+export default ProtectedRoute;
+

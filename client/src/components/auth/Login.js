@@ -1,11 +1,11 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const navigate = useNavigate();
   const [formData, setFormData] = useState({
-    email: '',
-    password: ''
+    email: "",
+    password: "",
   });
   const [errors, setErrors] = useState({});
   const [isLoading, setIsLoading] = useState(false);
@@ -13,12 +13,12 @@ const Login = () => {
   const validateForm = () => {
     const newErrors = {};
     if (!formData.email) {
-      newErrors.email = 'Email is required';
+      newErrors.email = "Email is required";
     } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = 'Email is invalid';
+      newErrors.email = "Email is invalid";
     }
     if (!formData.password) {
-      newErrors.password = 'Password is required';
+      newErrors.password = "Password is required";
     }
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
@@ -26,15 +26,15 @@ const Login = () => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
     // Clear error when user starts typing
     if (errors[name]) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        [name]: ''
+        [name]: "",
       }));
     }
   };
@@ -45,27 +45,30 @@ const Login = () => {
 
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:3000/api/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        credentials: 'include',
-        body: JSON.stringify(formData)
-      });
+      const response = await fetch(
+        import.meta.env.VITE_API_URL + "/auth/login",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          credentials: "include",
+          body: JSON.stringify(formData),
+        }
+      );
 
       const data = await response.json();
-      
+
       if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
+        throw new Error(data.message || "Login failed");
       }
 
       // Redirect to dashboard on success
-      navigate('/dashboard');
+      navigate("/dashboard");
     } catch (error) {
-      setErrors(prev => ({
+      setErrors((prev) => ({
         ...prev,
-        submit: error.message
+        submit: error.message,
       }));
     } finally {
       setIsLoading(false);
@@ -83,7 +86,9 @@ const Login = () => {
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
-              <label htmlFor="email" className="sr-only">Email address</label>
+              <label htmlFor="email" className="sr-only">
+                Email address
+              </label>
               <input
                 id="email"
                 name="email"
@@ -91,7 +96,7 @@ const Login = () => {
                 autoComplete="email"
                 required
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
-                  errors.email ? 'border-red-300' : 'border-gray-300'
+                  errors.email ? "border-red-300" : "border-gray-300"
                 } placeholder-gray-500 text-gray-900 rounded-t-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                 placeholder="Email address"
                 value={formData.email}
@@ -102,7 +107,9 @@ const Login = () => {
               )}
             </div>
             <div>
-              <label htmlFor="password" className="sr-only">Password</label>
+              <label htmlFor="password" className="sr-only">
+                Password
+              </label>
               <input
                 id="password"
                 name="password"
@@ -110,7 +117,7 @@ const Login = () => {
                 autoComplete="current-password"
                 required
                 className={`appearance-none rounded-none relative block w-full px-3 py-2 border ${
-                  errors.password ? 'border-red-300' : 'border-gray-300'
+                  errors.password ? "border-red-300" : "border-gray-300"
                 } placeholder-gray-500 text-gray-900 rounded-b-md focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 focus:z-10 sm:text-sm`}
                 placeholder="Password"
                 value={formData.password}
@@ -133,10 +140,12 @@ const Login = () => {
               type="submit"
               disabled={isLoading}
               className={`group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white ${
-                isLoading ? 'bg-indigo-400' : 'bg-indigo-600 hover:bg-indigo-700'
+                isLoading
+                  ? "bg-indigo-400"
+                  : "bg-indigo-600 hover:bg-indigo-700"
               } focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500`}
             >
-              {isLoading ? 'Signing in...' : 'Sign in'}
+              {isLoading ? "Signing in..." : "Sign in"}
             </button>
           </div>
         </form>
@@ -145,4 +154,5 @@ const Login = () => {
   );
 };
 
-export default Login; 
+export default Login;
+

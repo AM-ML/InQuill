@@ -9,8 +9,7 @@ import Comment from "./models/Comment.js";
 import dotenv from "dotenv";
 dotenv.config();
 
-const MONGODB_URI =
-  process.env.MONGODB_URI || "mongodb://localhost:27017/yourdb";
+const MONGODB_URI = process.env.MONGODB_URI;
 
 const NUM_USERS = 470;
 const NUM_AUTHORS = 200;
