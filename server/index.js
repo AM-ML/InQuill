@@ -1,4 +1,5 @@
 const serverless = require('serverless-http');
 const app = require('./server');
 
-module.exports.handler = serverless(app);
+module.exports = serverless(app); // ✅ default export, not named
+
