@@ -7,6 +7,12 @@ export function Navigation() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
 
+  // Helper function for case-insensitive role check
+  const hasRole = (userRole: string | undefined, roleToCheck: string): boolean => {
+    if (!userRole) return false;
+    return userRole.toLowerCase() === roleToCheck.toLowerCase();
+  };
+
   const handleLogout = async () => {
     try {
       await logout();
@@ -31,7 +37,11 @@ export function Navigation() {
               >
                 Articles
               </Link>
-              {user && (user.role === USER_ROLES.WRITER || user.role === USER_ROLES.ADMIN) && (
+              {user && (
+                hasRole(user.role, USER_ROLES.WRITER) || 
+                hasRole(user.role, USER_ROLES.ADMIN) || 
+                hasRole(user.role, USER_ROLES.OWNER)
+              ) && (
                 <Link
                   to="/articles/new"
                   className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900"

@@ -43,9 +43,14 @@ export function ProtectedRoute({ children, allowedRoles = [] }: ProtectedRoutePr
     return <Navigate to="/auth"  />;
   }
 
-  // Check role-based access
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
-    return <Navigate to="/" />;
+  // Check role-based access with case insensitivity
+  if (allowedRoles.length > 0) {
+    const userRole = user.role?.toLowerCase();
+    const normalizedAllowedRoles = allowedRoles.map(role => role.toLowerCase());
+    
+    if (!normalizedAllowedRoles.includes(userRole)) {
+      return <Navigate to="/" />;
+    }
   }
 
   // User is authenticated and authorized

@@ -35,11 +35,22 @@ const auth = async (req, res, next) => {
 const authorize = (...roles) => {
   return (req, res, next) => {
     if (!req.user) {
-      return res.status(401).json({ message: 'Authentication required' });
+      return res.status(401).json({ message: 'Authorization failed: No user found' });
     }
 
-    if (!roles.includes(req.user.role)) {
-      return res.status(403).json({ message: 'Access denied' });
+    // Owner role has access to everything (super-admin)
+    if (req.user.role.toLowerCase() === 'owner') {
+      return next();
+    }
+
+    // Case-insensitive role check
+    const userRole = req.user.role.toLowerCase();
+    const hasRole = roles.some(role => role.toLowerCase() === userRole);
+
+    if (!hasRole) {
+      return res.status(403).json({
+        message: `Access denied: Requires ${roles.join(' or ')} role`
+      });
     }
 
     next();

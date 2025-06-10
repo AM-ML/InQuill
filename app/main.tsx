@@ -7,6 +7,7 @@ if (import.meta.hot) {
 }
 
 import { AuthProvider } from './lib/contexts/AuthContext';
+import { NotificationProvider } from './lib/contexts/NotificationContext';
 import { ThemeProvider } from './components/theme-provider';
 import AppRoutes from './routes';
 import './globals.css';
@@ -29,9 +30,11 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
   <ThemeProvider attribute="class" defaultTheme={getDefaultTheme()} enableSystem>
     <AuthProvider>
       <BrowserRouter>
-        <Suspense fallback={<Loading />}>
-          <AppRoutes />
-        </Suspense>
+        <NotificationProvider>
+          <Suspense fallback={<Loading />}>
+            <AppRoutes />
+          </Suspense>
+        </NotificationProvider>
       </BrowserRouter>
     </AuthProvider>
   </ThemeProvider>

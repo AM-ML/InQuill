@@ -153,6 +153,30 @@ router.post('/logout', (req, res) => {
   res.json({ message: 'Logged out successfully' });
 });
 
+// Verify admin access
+router.get('/verify-admin', auth, async (req, res) => {
+  try {
+    const userRole = req.user.role.toLowerCase();
+    const isAdmin = userRole === 'admin' || userRole === 'owner';
+    
+    if (isAdmin) {
+      return res.json({ 
+        isAdmin: true, 
+        role: req.user.role,
+        message: 'User has admin access' 
+      });
+    } else {
+      return res.status(403).json({ 
+        isAdmin: false,
+        message: 'User does not have admin access'
+      });
+    }
+  } catch (error) {
+    console.error('Admin verification error:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+});
+
 // Get current user route
 router.get('/me', async (req, res) => {
   try {
@@ -427,6 +451,28 @@ router.post('/reset-password', [
       message: 'Error resetting password', 
       error: error.message 
     });
+  }
+});
+
+/**
+ * @route   GET /api/auth/verify-admin
+ * @desc    Check if current user has admin access
+ * @access  Private
+ */
+router.get('/verify-admin', auth, async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      return res.status(404).json({ isAdmin: false, message: 'User not found' });
+    }
+    
+    const normalizedRole = user.role.toLowerCase();
+    const isAdmin = normalizedRole === 'admin' || normalizedRole === 'owner';
+    
+    res.json({ isAdmin, role: user.role });
+  } catch (error) {
+    console.error('Error verifying admin status:', error);
+    res.status(500).json({ isAdmin: false, message: 'Server error' });
   }
 });
 

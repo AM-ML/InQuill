@@ -9,6 +9,7 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { ModeToggle } from "./mode-toggle"
 import { UserAvatar } from "./user-avatar"
+import { NotificationDropdown } from "./ui/notification-dropdown"
 import { cn } from "../lib/utils"
 import { useTheme } from "./theme-provider"
 import { useAuth } from "../lib/contexts/AuthContext"
@@ -232,6 +233,8 @@ export default function Navbar() {
 
           <ModeToggle />
           
+          {user && <NotificationDropdown />}
+          
           <UserAvatar />
         </div>
 
@@ -351,6 +354,15 @@ export default function Navbar() {
                     )}
                   </motion.div>
                 ))}
+                {user && (
+                  <motion.div
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.3, delay: 0.1 + navItems.length * 0.05 }}
+                  >
+                    <NotificationDropdown />
+                  </motion.div>
+                )}
                 <div onClick={() => setIsOpen(false)}>
                   <UserAvatar />
                 </div>

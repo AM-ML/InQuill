@@ -6,6 +6,7 @@ const Comment = require('../models/Comment');
 const User = require('../models/User');
 const { auth, authorize } = require('../middleware/auth');
 const { uploadBase64Image } = require('../utils/cloudinaryConfig');
+const { notifyArticleApproval, notifyArticleRejection, notifyArticleSubmission, notifyArticleLike, notifyArticleFavorite, notifyNewComment, notifyCommentReply } = require('../utils/notifications');
 
 // Validation middleware
 const articleValidation = [
@@ -18,6 +19,160 @@ const articleValidation = [
   body('tags').optional().isArray()
     .withMessage('Tags must be an array')
 ];
+
+// Submit article for review
+router.post('/:id/submit-for-review', auth, async (req, res) => {
+  try {
+    const article = await Article.findById(req.params.id);
+    
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+    
+    // Check if the user is the author of the article
+    if (article.author.toString() !== req.user._id.toString()) {
+      return res.status(403).json({ message: 'Not authorized to submit this article for review' });
+    }
+    
+    // Change status from draft to pending
+    if (article.status === 'draft') {
+      article.status = 'pending';
+      await article.save();
+      
+      // Create notification for admins about the new submission
+      await notifyArticleSubmission(article._id, article.title, req.user._id);
+      
+      res.json({ 
+        message: 'Article submitted for review successfully',
+        article 
+      });
+    } else {
+      return res.status(400).json({ 
+        message: `Cannot submit article for review. Current status: ${article.status}` 
+      });
+    }
+  } catch (error) {
+    console.error('Error submitting article for review:', error);
+    res.status(500).json({ message: 'Error submitting article for review', error: error.message });
+  }
+});
+
+// Get pending articles (admin only)
+router.get('/moderation/pending', auth, authorize('admin', 'owner'), async (req, res) => {
+  try {
+    const pendingArticles = await Article.find({ status: 'pending' })
+      .populate('author', 'username name title avatar')
+      .sort({ createdAt: -1 });
+    
+    res.json(pendingArticles);
+  } catch (error) {
+    console.error('Error fetching pending articles:', error);
+    res.status(500).json({ message: 'Error fetching pending articles', error: error.message });
+  }
+});
+
+// Approve an article (admin only)
+router.post('/:id/approve', auth, authorize('admin', 'owner'), async (req, res) => {
+  try {
+    const article = await Article.findById(req.params.id);
+    
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+    
+    if (article.status !== 'pending') {
+      return res.status(400).json({ 
+        message: `Cannot approve article. Current status: ${article.status}` 
+      });
+    }
+    
+    // Change status from pending to published
+    article.status = 'published';
+    
+    // Record the admin who approved it (could be stored in a separate activity log)
+    const approvedBy = {
+      userId: req.user._id,
+      username: req.user.username,
+      role: req.user.role,
+      timestamp: new Date()
+    };
+    
+    // In a real app, you might want to store this approval info
+    // article.approvedBy = approvedBy;
+    
+    await article.save();
+    
+    // Create notification for the article author
+    await notifyArticleApproval(
+      article._id, 
+      article.title, 
+      article.author, 
+      req.user._id
+    );
+    
+    res.json({ 
+      message: 'Article approved and published successfully',
+      article,
+      approvedBy
+    });
+  } catch (error) {
+    console.error('Error approving article:', error);
+    res.status(500).json({ message: 'Error approving article', error: error.message });
+  }
+});
+
+// Reject an article (admin only)
+router.post('/:id/reject', auth, authorize('admin', 'owner'), async (req, res) => {
+  try {
+    const { reason } = req.body;
+    const article = await Article.findById(req.params.id);
+    
+    if (!article) {
+      return res.status(404).json({ message: 'Article not found' });
+    }
+    
+    if (article.status !== 'pending') {
+      return res.status(400).json({ 
+        message: `Cannot reject article. Current status: ${article.status}` 
+      });
+    }
+    
+    // Change status back to draft
+    article.status = 'draft';
+    
+    // Record the rejection info (could be stored in a separate activity log)
+    const rejectedBy = {
+      userId: req.user._id,
+      username: req.user.username,
+      role: req.user.role,
+      reason: reason || 'No reason provided',
+      timestamp: new Date()
+    };
+    
+    // In a real app, you might want to store this rejection info
+    // article.rejectedBy = rejectedBy;
+    
+    await article.save();
+    
+    // Create notification for the article author
+    await notifyArticleRejection(
+      article._id, 
+      article.title, 
+      article.author, 
+      req.user._id, 
+      reason
+    );
+    
+    res.json({ 
+      message: 'Article rejected successfully',
+      article,
+      rejectedBy
+    });
+  } catch (error) {
+    console.error('Error rejecting article:', error);
+    res.status(500).json({ message: 'Error rejecting article', error: error.message });
+  }
+});
 
 // GET all articles with search, filtering, and pagination
 router.get('/', async (req, res) => {
@@ -586,6 +741,16 @@ router.post('/:id/like', [auth], async (req, res) => {
       // Like: add user to likedBy and increment likes
       article.likedBy.push(req.user._id);
       article.likes += 1;
+      
+      // Send notification to author if the liker is not the author
+      if (article.author.toString() !== req.user._id.toString()) {
+        await notifyArticleLike(
+          article._id, 
+          article.title, 
+          article.author, 
+          req.user._id
+        );
+      }
     }
     
     await article.save();
@@ -675,6 +840,21 @@ router.post('/:id/comments', [auth], async (req, res) => {
     // Populate author details
     await comment.populate('author', 'username avatar title');
 
+    // Send notification to the article author if it's not the same user
+    if (article.author.toString() !== req.user._id.toString()) {
+      try {
+        await notifyNewComment(
+          req.params.id, 
+          article.title, 
+          article.author, 
+          req.user._id
+        );
+        console.log('Comment notification sent from article route');
+      } catch (notificationError) {
+        console.error('Error sending comment notification from article route:', notificationError);
+      }
+    }
+
     res.status(201).json(comment);
   } catch (error) {
     console.error('Error in POST /articles/:id/comments:', error);
@@ -713,6 +893,21 @@ router.post('/comments/:commentId/reply', [auth], async (req, res) => {
 
     // Populate author details
     await reply.populate('author', 'username avatar title');
+
+    // Send notification to the parent comment author if it's not the same user
+    if (parentComment.author.toString() !== req.user._id.toString()) {
+      try {
+        await notifyCommentReply(
+          parentComment.article, 
+          parentComment._id,
+          parentComment.author, 
+          req.user._id
+        );
+        console.log('Comment reply notification sent from article route');
+      } catch (notificationError) {
+        console.error('Error sending comment reply notification from article route:', notificationError);
+      }
+    }
 
     res.status(201).json(reply);
   } catch (error) {
@@ -757,6 +952,16 @@ router.post('/:id/favorite', [auth], async (req, res) => {
       
       // Add user to article's favoritedBy
       article.favoritedBy.push(user._id);
+      
+      // Send notification to author if the user is not the author
+      if (article.author.toString() !== user._id.toString()) {
+        await notifyArticleFavorite(
+          article._id,
+          article.title,
+          article.author,
+          user._id
+        );
+      }
     }
     
     await Promise.all([user.save(), article.save()]);

@@ -68,7 +68,7 @@ export default function CollaborationsPage() {
     },
     {
       name: "University of Toronto",
-      logo: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fdownload.logo.wine%2Flogo%2FUniversity_of_Toronto%2FUniversity_of_Toronto-Logo.wine.png&f=1&nofb=1&ipt=312d622afe6bcfc348c0011763242623dce90693aae631fff6ea756aca90f6c1",
+      logo: "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Fmrvian.com%2Fwp-content%2Fuploads%2F2022%2F10%2FU-of-T-logo-1-1024x418.png&f=1&nofb=1&ipt=9c66a9d142f585c04557009d32b16f2838e194d1c1c6d007185886752a65b931",
       country: "Canada",
     },
     {
@@ -422,7 +422,7 @@ export default function CollaborationsPage() {
               <div className="relative">
                 <div className="absolute -z-10 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[400px] h-[400px] bg-gradient-to-r from-blue-400/20 to-amber-400/20 rounded-full blur-3xl"></div>
                 <motion.img
-                  src="https://images.unsplash.com/photo-1557804506-669a67965ba0?ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D&auto=format&fit=crop&w=1674&q=80"
+                  src="https://queencontech.com/wp-content/uploads/2019/11/website-header.jpg"
                   alt="Global Collaboration Network"
                   className="rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800"
                   whileHover={{ scale: 1.02, rotate: 1 }}
@@ -562,4 +562,3 @@ export default function CollaborationsPage() {
     </div>
   );
 }
-

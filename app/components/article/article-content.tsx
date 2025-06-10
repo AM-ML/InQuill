@@ -1,10 +1,20 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { Calendar, Clock, Eye, Heart, Share2, Bookmark, Award } from "lucide-react";
+import {
+  Calendar,
+  Clock,
+  Eye,
+  Heart,
+  Share2,
+  Bookmark,
+  Award,
+} from "lucide-react";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
 import { Avatar, AvatarFallback, AvatarImage } from "../ui/avatar";
-import RichEditorRenderer, { RichEditorStyle } from "../editor/rich-editor-renderer";
+import RichEditorRenderer, {
+  RichEditorStyle,
+} from "../editor/rich-editor-renderer";
 import { useAuth } from "../../lib/contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
 import { articleService } from "../../lib/services/articleService";
@@ -21,7 +31,7 @@ export default function ArticleContent({
   article,
   handleLikeArticle,
   userLiked,
-  likeCount
+  likeCount,
 }: ArticleContentProps) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -38,25 +48,16 @@ export default function ArticleContent({
   }, [article]);
 
   const handleShare = () => {
-    if (navigator.share) {
-      navigator.share({
-        title: article.title,
-        text: article.description || "Check out this article!",
-        url: window.location.href,
-      }).catch(error => console.log('Error sharing', error));
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      toast({
-        title: "Link copied",
-        description: "Article link copied to clipboard",
-      });
-    }
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link copied",
+      description: "Article link copied to clipboard",
+    });
   };
 
   const handleBookmark = async () => {
     if (!user) {
-      navigate('/login?redirect=' + encodeURIComponent(window.location.href));
+      navigate("/login?redirect=" + encodeURIComponent(window.location.href));
       return;
     }
 
@@ -66,11 +67,11 @@ export default function ArticleContent({
       setBookmarkLoading(true);
       const response = await articleService.favoriteArticle(article._id);
       setIsBookmarked(response.favorited);
-      
+
       toast({
         title: response.favorited ? "Article bookmarked" : "Bookmark removed",
-        description: response.favorited 
-          ? "Article has been bookmarked" 
+        description: response.favorited
+          ? "Article has been bookmarked"
           : "Article removed from your bookmarks",
       });
     } catch (error) {
@@ -78,7 +79,7 @@ export default function ArticleContent({
       toast({
         title: "Action failed",
         description: "Could not bookmark article. Please try again.",
-        type: "error"
+        type: "error",
       });
     } finally {
       setBookmarkLoading(false);
@@ -87,54 +88,58 @@ export default function ArticleContent({
 
   // Format date
   const formatDate = (date: string) => {
-    if (!date) return '';
+    if (!date) return "";
     try {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+      return new Date(date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (e) {
-      return '';
+      return "";
     }
   };
 
   // Estimate read time (1 minute per 200 words)
   const estimateReadTime = (content: any) => {
-    if (!content) return '1 min read';
-    
+    if (!content) return "1 min read";
+
     try {
       // For Editor.js content
       if (content.blocks) {
-        const textBlocks = content.blocks.filter((block: any) => 
-          ['paragraph', 'header', 'quote', 'list'].includes(block.type)
+        const textBlocks = content.blocks.filter((block: any) =>
+          ["paragraph", "header", "quote", "list"].includes(block.type)
         );
-        
+
         let wordCount = 0;
         textBlocks.forEach((block: any) => {
-          if (block.type === 'paragraph' || block.type === 'header' || block.type === 'quote') {
-            wordCount += (block.data.text || '').split(/\s+/).length;
-          } else if (block.type === 'list' && Array.isArray(block.data.items)) {
+          if (
+            block.type === "paragraph" ||
+            block.type === "header" ||
+            block.type === "quote"
+          ) {
+            wordCount += (block.data.text || "").split(/\s+/).length;
+          } else if (block.type === "list" && Array.isArray(block.data.items)) {
             block.data.items.forEach((item: string) => {
               wordCount += item.split(/\s+/).length;
             });
           }
         });
-        
+
         const minutes = Math.max(1, Math.ceil(wordCount / 200));
         return `${minutes} min read`;
       }
-      
+
       // Fallback for string content
-      if (typeof content === 'string') {
+      if (typeof content === "string") {
         const wordCount = content.split(/\s+/).length;
         const minutes = Math.max(1, Math.ceil(wordCount / 200));
         return `${minutes} min read`;
       }
-      
-      return '1 min read';
+
+      return "1 min read";
     } catch (e) {
-      return '1 min read';
+      return "1 min read";
     }
   };
 
@@ -156,9 +161,13 @@ export default function ArticleContent({
             {article.category || "Uncategorized"}
           </Badge>
 
-          <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">{article.title}</h1>
+          <h1 className="text-4xl md:text-5xl font-bold tracking-tight leading-tight">
+            {article.title}
+          </h1>
 
-          <p className="text-xl text-muted-foreground leading-relaxed">{article.description || "No description available"}</p>
+          <p className="text-xl text-muted-foreground leading-relaxed">
+            {article.description || "No description available"}
+          </p>
         </div>
 
         {/* Article Meta */}
@@ -185,41 +194,72 @@ export default function ArticleContent({
         <div className="flex items-center justify-between p-6 bg-gray-50 dark:bg-gray-900/50 rounded-xl">
           <div className="flex items-center space-x-4">
             <Avatar className="h-12 w-12 border-2 border-blue-200 dark:border-blue-800">
-              <AvatarImage src={article.author?.avatar } alt={article.author?.username || "Unknown Author"} />
+              <AvatarImage
+                src={article.author?.avatar}
+                alt={article.author?.username || "Unknown Author"}
+              />
               <AvatarFallback>
-                {(article.author?.username || "UA").substring(0, 2).toUpperCase()}
+                {(article.author?.username || "UA")
+                  .substring(0, 2)
+                  .toUpperCase()}
               </AvatarFallback>
             </Avatar>
             <div>
-              <h3 className="font-semibold text-lg">{article.author?.name || article.author?.username || "Unknown Author"}</h3>
+              <h3 className="font-semibold text-lg">
+                {article.author?.name ||
+                  article.author?.username ||
+                  "Unknown Author"}
+              </h3>
               {article.author?.title && (
-                <p className="text-sm text-muted-foreground">{article.author?.title}</p>
+                <p className="text-sm text-muted-foreground">
+                  {article.author?.title}
+                </p>
               )}
             </div>
           </div>
           <div className="flex items-center space-x-2">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               size="sm"
               onClick={handleLikeArticle}
-              className={userLiked ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700" : ""}
+              className={
+                userLiked
+                  ? "bg-blue-50 text-blue-600 border-blue-300 dark:bg-blue-900/20 dark:border-blue-700"
+                  : ""
+              }
             >
-              <Heart className={`h-4 w-4 mr-1 ${userLiked ? "fill-blue-600 text-blue-600" : ""}`} />
+              <Heart
+                className={`h-4 w-4 mr-1 ${
+                  userLiked ? "fill-blue-600 text-blue-600" : ""
+                }`}
+              />
               Like
             </Button>
             <Button variant="outline" size="sm" onClick={handleShare}>
               <Share2 className="h-4 w-4 mr-1" />
               Share
             </Button>
-            <Button 
-              variant="outline" 
-              size="sm" 
+            <Button
+              variant="outline"
+              size="sm"
               onClick={handleBookmark}
               disabled={bookmarkLoading}
-              className={isBookmarked ? "bg-yellow-50 text-yellow-600 border-yellow-300 dark:bg-yellow-900/20 dark:border-yellow-700" : ""}
+              className={
+                isBookmarked
+                  ? "bg-yellow-50 text-yellow-600 border-yellow-300 dark:bg-yellow-900/20 dark:border-yellow-700"
+                  : ""
+              }
             >
-              <Bookmark className={`h-4 w-4 mr-1 ${isBookmarked ? "fill-yellow-500 text-yellow-500" : ""}`} />
-              {bookmarkLoading ? "Saving..." : (isBookmarked ? "Bookmarked" : "Bookmark")}
+              <Bookmark
+                className={`h-4 w-4 mr-1 ${
+                  isBookmarked ? "fill-yellow-500 text-yellow-500" : ""
+                }`}
+              />
+              {bookmarkLoading
+                ? "Saving..."
+                : isBookmarked
+                ? "Bookmarked"
+                : "Bookmark"}
             </Button>
           </div>
         </div>
@@ -251,13 +291,15 @@ export default function ArticleContent({
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6, delay: 0.3 }}
       >
-        {typeof article.content === 'string' ? (
+        {typeof article.content === "string" ? (
           // Handle legacy string content format
-          article.content.split('\n').map((paragraph: string, index: number) => (
-            <p key={index} className="mb-4">
-              {paragraph}
-            </p>
-          ))
+          article.content
+            .split("\n")
+            .map((paragraph: string, index: number) => (
+              <p key={index} className="mb-4">
+                {paragraph}
+              </p>
+            ))
         ) : (
           // Use the new renderer for Editor.js content
           <>
@@ -268,4 +310,5 @@ export default function ArticleContent({
       </motion.div>
     </article>
   );
-} 
+}
+

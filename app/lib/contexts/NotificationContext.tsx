@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import { notificationService } from '../services/notificationService';
 import type { Notification } from '../services/notificationService';
 import { useAuth } from './AuthContext';
@@ -8,11 +8,9 @@ interface NotificationContextType {
   unreadCount: number;
   loading: boolean;
   error: string | null;
-  fetchNotifications: () => Promise<void>;
+  fetchNotifications: (force?: boolean) => Promise<void>;
   markAsRead: (notificationId: string) => Promise<void>;
   markAllAsRead: () => Promise<void>;
-  deleteNotification: (notificationId: string) => Promise<void>;
-  clearAll: () => Promise<void>;
 }
 
 const defaultNotificationContext: NotificationContextType = {
@@ -20,11 +18,9 @@ const defaultNotificationContext: NotificationContextType = {
   unreadCount: 0,
   loading: false,
   error: null,
-  fetchNotifications: async () => {},
-  markAsRead: async () => {},
-  markAllAsRead: async () => {},
-  deleteNotification: async () => {},
-  clearAll: async () => {},
+  fetchNotifications: async () => { throw new Error('NotificationContext not initialized'); },
+  markAsRead: async () => { throw new Error('NotificationContext not initialized'); },
+  markAllAsRead: async () => { throw new Error('NotificationContext not initialized'); },
 };
 
 const NotificationContext = createContext<NotificationContextType>(defaultNotificationContext);
@@ -35,148 +31,127 @@ export function NotificationProvider({ children }: { children: React.ReactNode }
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
+  
+  // Last fetch timestamp to prevent excessive fetching
+  const [lastFetchTime, setLastFetchTime] = useState(0);
+  const FETCH_COOLDOWN_MS = 10000; // 10 seconds cooldown
+  const initialFetchDone = useRef(false);
 
-  const fetchNotifications = useCallback(async () => {
-    if (!user) return;
-    
+  const fetchNotifications = useCallback(async (force = false) => {
+    if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      return;
+    }
+
+    // Don't fetch if we recently fetched, unless forced
+    const now = Date.now();
+    if (!force && now - lastFetchTime < FETCH_COOLDOWN_MS) {
+      return;
+    }
+
     try {
       setLoading(true);
+      const fetchedNotifications = await notificationService.getNotifications();
+      setNotifications(fetchedNotifications);
+      setUnreadCount(fetchedNotifications.length);
       setError(null);
-      const response = await notificationService.getNotifications({ limit: 15 });
-      setNotifications(response.notifications);
-      setUnreadCount(response.unreadCount);
+      setLastFetchTime(now);
     } catch (err) {
-      console.error('Failed to fetch notifications:', err);
-      setError('Failed to load notifications');
+      setError(err instanceof Error ? err.message : 'Failed to fetch notifications');
+      console.error('Error fetching notifications:', err);
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  // Initial fetch and setup polling interval to check for new notifications
-  useEffect(() => {
-    if (!user) return;
-    
-    // Initial fetch
-    fetchNotifications();
-    
-    // Set up polling interval (every 60 seconds)
-    const interval = setInterval(() => {
-      fetchNotifications();
-    }, 60000);
-    
-    return () => {
-      clearInterval(interval);
-    };
-  }, [user, fetchNotifications]);
-
-  // Also check for unread count periodically (every 30 seconds)
-  useEffect(() => {
-    if (!user) return;
-    
-    const checkUnreadInterval = setInterval(async () => {
-      try {
-        const count = await notificationService.getUnreadCount();
-        setUnreadCount(count);
-      } catch (err) {
-        console.error('Failed to fetch unread count:', err);
-      }
-    }, 30000);
-    
-    return () => {
-      clearInterval(checkUnreadInterval);
-    };
-  }, [user]);
+  }, [user, lastFetchTime]);
 
   const markAsRead = async (notificationId: string) => {
     try {
-      await notificationService.markAsRead(notificationId);
+      const updatedNotification = await notificationService.markAsRead(notificationId);
       
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => 
-          notification._id === notificationId
-            ? { ...notification, read: true }
-            : notification
+      // Update the notifications list
+      setNotifications(prevNotifications => 
+        prevNotifications.filter(notification => 
+          notification._id !== notificationId
         )
       );
       
-      setUnreadCount(prev => Math.max(0, prev - 1));
+      // Update unread count
+      setUnreadCount(prevCount => Math.max(0, prevCount - 1));
     } catch (err) {
-      console.error('Failed to mark notification as read:', err);
-      setError('Failed to update notification');
+      setError(err instanceof Error ? err.message : 'Failed to mark notification as read');
+      console.error('Error marking notification as read:', err);
     }
   };
 
   const markAllAsRead = async () => {
     try {
       await notificationService.markAllAsRead();
-      
-      // Update local state
-      setNotifications(prev => 
-        prev.map(notification => ({ ...notification, read: true }))
-      );
-      
-      setUnreadCount(0);
-    } catch (err) {
-      console.error('Failed to mark all notifications as read:', err);
-      setError('Failed to update notifications');
-    }
-  };
-
-  const deleteNotification = async (notificationId: string) => {
-    try {
-      await notificationService.deleteNotification(notificationId);
-      
-      // Update local state
-      const notification = notifications.find(n => n._id === notificationId);
-      setNotifications(prev => prev.filter(n => n._id !== notificationId));
-      
-      if (notification && !notification.read) {
-        setUnreadCount(prev => Math.max(0, prev - 1));
-      }
-    } catch (err) {
-      console.error('Failed to delete notification:', err);
-      setError('Failed to delete notification');
-    }
-  };
-
-  const clearAll = async () => {
-    try {
-      await notificationService.clearAll();
-      
-      // Update local state
       setNotifications([]);
       setUnreadCount(0);
     } catch (err) {
-      console.error('Failed to clear all notifications:', err);
-      setError('Failed to clear notifications');
+      setError(err instanceof Error ? err.message : 'Failed to mark all notifications as read');
+      console.error('Error marking all notifications as read:', err);
     }
   };
 
-  const value = {
-    notifications,
-    unreadCount,
-    loading,
-    error,
-    fetchNotifications,
-    markAsRead,
-    markAllAsRead,
-    deleteNotification,
-    clearAll,
-  };
+  // Fetch notifications once when the user logs in or on initial load
+  useEffect(() => {
+    if (user && !initialFetchDone.current) {
+      fetchNotifications(true);
+      initialFetchDone.current = true;
+    } else if (!user) {
+      setNotifications([]);
+      setUnreadCount(0);
+      initialFetchDone.current = false;
+    }
+  }, [user, fetchNotifications]);
+
+  // Set up periodic refresh (every 60 seconds - less frequent)
+  useEffect(() => {
+    if (!user) return;
+
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+    }, 60000); // 60 seconds
+
+    return () => clearInterval(intervalId);
+  }, [user, fetchNotifications]);
+
+  // Add event listener for visibility changes
+  useEffect(() => {
+    if (!user) return;
+    
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        fetchNotifications(true);
+      }
+    };
+    
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [user, fetchNotifications]);
 
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        unreadCount,
+        loading,
+        error,
+        fetchNotifications,
+        markAsRead,
+        markAllAsRead,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );
 }
 
-export const useNotifications = () => {
-  const context = useContext(NotificationContext);
-  if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
-  }
-  return context;
-}; 
+export function useNotifications() {
+  return useContext(NotificationContext);
+} 

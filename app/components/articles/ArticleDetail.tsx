@@ -251,8 +251,15 @@ export function ArticleDetail({ id }: ArticleDetailProps) {
     );
   }
 
-  const canEdit = user && (user.role === 'admin' || (article.author && user._id === article.author._id));
-  const canDelete = user && user.role === 'admin';
+  const canEdit = user && (
+    user.role?.toLowerCase() === 'admin' || 
+    user.role?.toLowerCase() === 'owner' || 
+    (article.author && user._id === article.author._id)
+  );
+  const canDelete = user && (
+    user.role?.toLowerCase() === 'admin' || 
+    user.role?.toLowerCase() === 'owner'
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">

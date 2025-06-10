@@ -21,7 +21,7 @@ const articleSchema = new mongoose.Schema({
   },
   status: {
     type: String,
-    enum: ['draft', 'published'],
+    enum: ['draft', 'pending', 'published'],
     default: 'draft'
   },
   category: {

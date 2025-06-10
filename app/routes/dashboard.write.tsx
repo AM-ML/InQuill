@@ -29,7 +29,7 @@ interface Article {
   category: string
   tags: string[]
   coverImage: string
-  status: "draft" | "published"
+  status: "draft" | "pending" | "published"
 }
 
 export default function WriteArticlePage() {
@@ -203,11 +203,14 @@ export default function WriteArticlePage() {
 
   // Add a useEffect to check if the user has the writer role
   useEffect(() => {
-    if (user && user.role !== 'writer' && user.role !== 'admin') {
-      toast({
-        title: "Permission Required",
-        description: "You need writer permissions to publish articles. Contact an administrator if you need access.",
-      });
+    if (user) {
+      const userRole = user.role?.toLowerCase();
+      if (userRole !== 'writer' && userRole !== 'admin' && userRole !== 'owner') {
+        toast({
+          title: "Permission Required",
+          description: "You need writer permissions to publish articles. Contact an administrator if you need access.",
+        });
+      }
     }
   }, [user, toast]);
 
@@ -278,6 +281,132 @@ export default function WriteArticlePage() {
     }
   }, [article, coverImageFile, navigate, toast])
 
+  // Submit article for review 
+  const handleSubmitForReview = useCallback(async () => {
+    if (!user) {
+      toast({
+        title: "Authentication Required",
+        description: "You need to be logged in to submit articles for review.",
+      });
+      return;
+    }
+    
+    // Validate required fields
+    const validationErrors = [];
+    
+    if (!article.title.trim()) {
+      validationErrors.push("Title is required");
+    }
+    
+    if (!article.description.trim()) {
+      validationErrors.push("Description is required");
+    }
+    
+    if (!article.category) {
+      validationErrors.push("Category is required");
+    }
+    
+    if (!coverImagePreview && !article.coverImage) {
+      validationErrors.push("Cover image is required");
+    }
+    
+    // Check content
+    let editorContent = article.content;
+    if (editorRef.current) {
+      try {
+        editorContent = await editorRef.current.getJSON();
+      } catch (editorError) {
+        console.error("Error getting editor content:", editorError);
+        // Fall back to current content in state
+      }
+    }
+    
+    if (!editorContent || !editorContent.blocks || editorContent.blocks.length === 0 || 
+        (editorContent.blocks.length === 1 && !editorContent.blocks[0].data?.text)) {
+      validationErrors.push("Content is required");
+    }
+    
+    if (validationErrors.length > 0) {
+      toast({
+        title: "Missing Information",
+        description: validationErrors.join(". "),
+      });
+      return;
+    }
+    
+    // If no ID, save draft first
+    if (!article._id) {
+      toast({
+        title: "Save Required",
+        description: "Please save your article as a draft before submitting for review.",
+      });
+      return;
+    }
+    
+    setIsLoading(true);
+    
+    try {
+      // Save any changes first
+      const articleData = {
+        ...article,
+        content: editorContent,
+      };
+      
+      // Upload cover image if we have a new one
+      if (coverImageFile) {
+        try {
+          const uploadResponse = await apiClient.uploads.articleImage(coverImageFile);
+          articleData.coverImage = uploadResponse.file.url;
+        } catch (uploadError: any) {
+          toast({
+            title: "Upload Failed",
+            description: uploadError.message || "Failed to upload cover image.",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+      
+      // Update article first
+      await apiClient.articles.update(article._id!, articleData);
+      
+      // Then submit for review
+      const response = await fetch(`/api/articles/${article._id}/submit-for-review`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to submit for review");
+      }
+      
+      const data = await response.json();
+      
+      setArticle(prev => ({ ...prev, status: 'pending' }));
+      
+      toast({
+        title: "Successfully Submitted",
+        description: "Your article has been submitted for review.",
+      });
+      
+      // Redirect to dashboard
+      navigate("/dashboard/articles");
+    } catch (error: any) {
+      console.error("Error submitting for review:", error);
+      toast({
+        title: "Submission Failed",
+        description: error.message || "An error occurred while submitting your article for review.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  }, [article, coverImageFile, coverImagePreview, navigate, toast, user]);
+  
   // Update the handlePublish function to check user role and handle permissions errors better
   const handlePublish = useCallback(async () => {
     if (!user) {
@@ -288,7 +417,8 @@ export default function WriteArticlePage() {
       return;
     }
     
-    if (user.role !== 'writer' && user.role !== 'admin') {
+    const userRole = user.role?.toLowerCase();
+    if (userRole !== 'writer' && userRole !== 'admin' && userRole !== 'owner') {
       toast({
         title: "Permission Denied",
         description: "You need writer permissions to publish articles. Contact an administrator if you need access.",
@@ -483,9 +613,19 @@ export default function WriteArticlePage() {
           </Button>
           
           <Button
+            variant="secondary"
+            size="sm"
+            onClick={handleSubmitForReview}
+            disabled={isLoading || article.status === 'pending'}
+          >
+            <Send className="h-4 w-4 mr-2" />
+            Submit for Review
+          </Button>
+          
+          <Button
             size="sm"
             onClick={handlePublish}
-            disabled={isLoading}
+            disabled={isLoading || !user || !['admin', 'owner'].includes(user.role?.toLowerCase() || '')}
             className="bg-gradient-to-r from-blue-600 to-blue-400 hover:from-blue-700 hover:to-blue-500"
           >
             <Send className="h-4 w-4 mr-2" />

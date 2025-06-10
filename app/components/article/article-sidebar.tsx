@@ -1,6 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
-import { Eye, Heart, Share2, Bookmark, User, Calendar, Tag } from "lucide-react";
+import {
+  Eye,
+  Heart,
+  Share2,
+  Bookmark,
+  User,
+  Calendar,
+  Tag,
+} from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/card";
 import { Button } from "../ui/button";
 import { Badge } from "../ui/badge";
@@ -21,7 +29,7 @@ export default function ArticleSidebar({
   article,
   handleLikeArticle,
   handleShareArticle,
-  userLiked
+  userLiked,
 }: ArticleSidebarProps) {
   const navigate = useNavigate();
   const [activeSection, setActiveSection] = useState("");
@@ -34,14 +42,14 @@ export default function ArticleSidebar({
   useEffect(() => {
     const checkFavoriteStatus = async () => {
       if (!user || !article?._id) return;
-      
+
       try {
         // First check if the article already has favorited status from the API
         if (article.favorited !== undefined) {
           setIsFavorited(article.favorited);
           return;
         }
-        
+
         // If not, make an API call to check
         const response = await articleService.checkFavoriteStatus(article._id);
         setIsFavorited(response.favorited);
@@ -51,20 +59,20 @@ export default function ArticleSidebar({
         setIsFavorited(false);
       }
     };
-    
+
     checkFavoriteStatus();
   }, [article, user]);
 
   // Generate table of contents from article content
   const generateTableOfContents = () => {
     if (!article?.content) return [];
-    
+
     let toc: { id: string; title: string; level: number }[] = [];
-    
+
     // For Editor.js content
     if (article.content.blocks) {
       article.content.blocks.forEach((block: any, index: number) => {
-        if (block.type === 'header') {
+        if (block.type === "header") {
           const level = block.data.level || 1;
           const title = block.data.text;
           const id = `heading-${index}`;
@@ -72,7 +80,7 @@ export default function ArticleSidebar({
         }
       });
     }
-    
+
     // If no headers found, add default sections
     if (toc.length === 0) {
       toc = [
@@ -80,74 +88,64 @@ export default function ArticleSidebar({
         { id: "introduction", title: "Introduction", level: 1 },
         { id: "methodology", title: "Methodology", level: 1 },
         { id: "results", title: "Results", level: 1 },
-        { id: "conclusion", title: "Conclusion", level: 1 }
+        { id: "conclusion", title: "Conclusion", level: 1 },
       ];
     }
-    
+
     return toc;
   };
 
   const tableOfContents = generateTableOfContents();
-  
+
   // Format date
   const formatDate = (date: string) => {
-    if (!date) return '';
+    if (!date) return "";
     try {
-      return new Date(date).toLocaleDateString('en-US', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+      return new Date(date).toLocaleDateString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
       });
     } catch (e) {
-      return '';
+      return "";
     }
   };
 
   // Set up scroll listener to update active section
   useEffect(() => {
     const handleScroll = () => {
-      const headingElements = document.querySelectorAll('h1, h2, h3, h4, h5, h6');
+      const headingElements = document.querySelectorAll(
+        "h1, h2, h3, h4, h5, h6"
+      );
       let currentSection = "";
-      
-      headingElements.forEach(heading => {
+
+      headingElements.forEach((heading) => {
         const rect = heading.getBoundingClientRect();
         if (rect.top <= 150) {
           currentSection = heading.id;
         }
       });
-      
+
       setActiveSection(currentSection);
     };
-    
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   // Handle share action
   const handleShare = () => {
-    if (handleShareArticle) {
-      handleShareArticle();
-    } else if (navigator.share) {
-      navigator.share({
-        title: article.title,
-        text: article.description || "Check out this article!",
-        url: window.location.href,
-      }).catch(error => console.log('Error sharing', error));
-    } else {
-      // Fallback for browsers that don't support Web Share API
-      navigator.clipboard.writeText(window.location.href);
-      // Show toast notification
-      toast({
-        title: "Link copied",
-        description: "Article link copied to clipboard",
-      });
-    }
+    navigator.clipboard.writeText(window.location.href);
+    toast({
+      title: "Link copied",
+      description: "Article link copied to clipboard",
+    });
   };
 
   // Handle favorite action
   const handleFavorite = async () => {
     if (!user) {
-      navigate('/login?redirect=' + encodeURIComponent(window.location.href));
+      navigate("/login?redirect=" + encodeURIComponent(window.location.href));
       return;
     }
 
@@ -157,11 +155,11 @@ export default function ArticleSidebar({
       setFavoriteLoading(true);
       const response = await articleService.favoriteArticle(article._id);
       setIsFavorited(response.favorited);
-      
+
       toast({
         title: response.favorited ? "Article bookmarked" : "Bookmark removed",
-        description: response.favorited 
-          ? "Article has been bookmarked" 
+        description: response.favorited
+          ? "Article has been bookmarked"
           : "Article removed from your bookmarks",
       });
     } catch (error) {
@@ -169,7 +167,7 @@ export default function ArticleSidebar({
       toast({
         title: "Action failed",
         description: "Could not bookmark article. Please try again.",
-        type: "error"
+        type: "error",
       });
     } finally {
       setFavoriteLoading(false);
@@ -203,8 +201,14 @@ export default function ArticleSidebar({
                     key={item.id}
                     href={`#${item.id}`}
                     className={`block text-sm hover:text-blue-600 dark:hover:text-blue-400 transition-colors ${
-                      item.level === 2 ? "ml-4 text-muted-foreground" : "font-medium"
-                    } ${activeSection === item.id ? "text-blue-600 dark:text-blue-400" : ""}`}
+                      item.level === 2
+                        ? "ml-4 text-muted-foreground"
+                        : "font-medium"
+                    } ${
+                      activeSection === item.id
+                        ? "text-blue-600 dark:text-blue-400"
+                        : ""
+                    }`}
                   >
                     {item.title}
                   </a>
@@ -226,25 +230,37 @@ export default function ArticleSidebar({
             <CardTitle className="text-lg">Article Actions</CardTitle>
           </CardHeader>
           <CardContent className="space-y-3">
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={handleLikeArticle}
             >
-              <Heart className={`h-4 w-4 mr-2 ${userLiked ? "fill-blue-600 text-blue-600" : ""}`} />
+              <Heart
+                className={`h-4 w-4 mr-2 ${
+                  userLiked ? "fill-blue-600 text-blue-600" : ""
+                }`}
+              />
               {userLiked ? "Unlike Article" : "Like Article"}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={handleFavorite}
               disabled={favoriteLoading}
             >
-              <Bookmark className={`h-4 w-4 mr-2 ${isFavorited ? "fill-yellow-500 text-yellow-500" : ""}`} />
-              {favoriteLoading ? "Saving..." : (isFavorited ? "Remove Bookmark" : "Bookmark")}
+              <Bookmark
+                className={`h-4 w-4 mr-2 ${
+                  isFavorited ? "fill-yellow-500 text-yellow-500" : ""
+                }`}
+              />
+              {favoriteLoading
+                ? "Saving..."
+                : isFavorited
+                ? "Remove Bookmark"
+                : "Bookmark"}
             </Button>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               className="w-full justify-start"
               onClick={handleShare}
             >
@@ -293,7 +309,9 @@ export default function ArticleSidebar({
                   <Calendar className="h-4 w-4 text-muted-foreground" />
                   <span className="text-sm">Published</span>
                 </div>
-                <span className="font-medium">{formatDate(article?.createdAt || '')}</span>
+                <span className="font-medium">
+                  {formatDate(article?.createdAt || "")}
+                </span>
               </div>
             </div>
           </CardContent>
@@ -315,14 +333,23 @@ export default function ArticleSidebar({
               <div className="space-y-4">
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-12 w-12">
-                    <AvatarImage src={article.author.avatar} alt={article.author.username} />
+                    <AvatarImage
+                      src={article.author.avatar}
+                      alt={article.author.username}
+                    />
                     <AvatarFallback>
-                      {(article.author.username || "UA").substring(0, 2).toUpperCase()}
+                      {(article.author.username || "UA")
+                        .substring(0, 2)
+                        .toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <h4 className="font-semibold">{article.author.name || article.author.username}</h4>
-                    <p className="text-sm text-muted-foreground">{article.author.title || ""}</p>
+                    <h4 className="font-semibold">
+                      {article.author.name || article.author.username}
+                    </h4>
+                    <p className="text-sm text-muted-foreground">
+                      {article.author.title || ""}
+                    </p>
                   </div>
                 </div>
                 {article.author.bio && (
@@ -330,9 +357,9 @@ export default function ArticleSidebar({
                     {article.author.bio}
                   </p>
                 )}
-                <Button 
-                  variant="outline" 
-                  size="sm" 
+                <Button
+                  variant="outline"
+                  size="sm"
                   className="w-full"
                   onClick={handleViewAuthorProfile}
                 >
@@ -373,4 +400,5 @@ export default function ArticleSidebar({
       )}
     </div>
   );
-} 
+}
+

@@ -3,7 +3,7 @@ import { ProtectedRoute } from '../components/auth/ProtectedRoute';
 
 export default function EditArticleRoute() {
   return (
-    <ProtectedRoute allowedRoles={['writer', 'admin']}>
+    <ProtectedRoute allowedRoles={['writer', 'admin', 'owner']}>
         <ArticleEditor />
     </ProtectedRoute>
   );

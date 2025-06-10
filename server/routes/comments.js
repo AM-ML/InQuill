@@ -4,6 +4,7 @@ const { body, validationResult } = require('express-validator');
 const Comment = require('../models/Comment');
 const Article = require('../models/Article');
 const { auth } = require('../middleware/auth');
+const { notifyNewComment, notifyCommentReply, notifyCommentLike } = require('../utils/notifications');
 
 // Validation middleware
 const commentValidation = [
@@ -40,6 +41,21 @@ router.post('/article/:articleId', [auth, ...commentValidation], async (req, res
     // Add comment to article's comment list
     article.comments.push(comment._id);
     await article.save();
+
+    // Send notification to the article author if it's not the same user
+    if (article.author.toString() !== req.user._id.toString()) {
+      try {
+        await notifyNewComment(
+          articleId, 
+          article.title, 
+          article.author, 
+          req.user._id
+        );
+        console.log('Comment notification sent');
+      } catch (notificationError) {
+        console.error('Error sending comment notification:', notificationError);
+      }
+    }
 
     res.status(201).json(comment);
   } catch (error) {
@@ -79,6 +95,16 @@ router.post('/reply/:commentId', [auth, ...commentValidation], async (req, res) 
     // Add reply to parent comment's replies list
     parentComment.replies.push(reply._id);
     await parentComment.save();
+    
+    // Send notification to the parent comment author if it's not the same user
+    if (parentComment.author.toString() !== req.user._id.toString()) {
+      await notifyCommentReply(
+        parentComment.article, 
+        commentId,
+        parentComment.author, 
+        req.user._id
+      );
+    }
 
     res.status(201).json(reply);
   } catch (error) {
@@ -216,6 +242,16 @@ router.post('/:commentId/like', [auth], async (req, res) => {
 
     comment.likes += 1;
     await comment.save();
+    
+    // Send notification to the comment author if it's not the same user
+    if (comment.author.toString() !== req.user._id.toString()) {
+      await notifyCommentLike(
+        comment.article, 
+        commentId,
+        comment.author, 
+        req.user._id
+      );
+    }
 
     res.json({ likes: comment.likes });
   } catch (error) {
