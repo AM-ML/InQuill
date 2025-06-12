@@ -1,55 +1,60 @@
-"use client"
+"use client";
 
-import React from "react"
-import { useState, useEffect } from "react"
-import { Link, useLocation, useNavigate } from "react-router-dom"
-import { motion, useScroll, useMotionValueEvent, AnimatePresence } from "framer-motion"
-import { Search, Menu, X, ChevronDown } from "lucide-react"
-import { Button } from "./ui/button"
-import { Input } from "./ui/input"
-import { ModeToggle } from "./mode-toggle"
-import { UserAvatar } from "./user-avatar"
-import { NotificationDropdown } from "./ui/notification-dropdown"
-import { cn } from "../lib/utils"
-import { useTheme } from "./theme-provider"
-import { useAuth } from "../lib/contexts/AuthContext"
-import logo from "../../public/logo-dark-theme.svg"
-import { Logo } from "./ui/logo"
+import React from "react";
+import { useState, useEffect } from "react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import {
+  motion,
+  useScroll,
+  useMotionValueEvent,
+  AnimatePresence,
+} from "framer-motion";
+import { Search, Menu, X, ChevronDown } from "lucide-react";
+import { Button } from "./ui/button";
+import { Input } from "./ui/input";
+import { ModeToggle } from "./mode-toggle";
+import { UserAvatar } from "./user-avatar";
+import { NotificationDropdown } from "./ui/notification-dropdown";
+import { cn } from "../lib/utils";
+import { useTheme } from "./theme-provider";
+import { useAuth } from "../lib/contexts/AuthContext";
+import logo from "../../public/logo-dark-theme.svg";
+import { Logo } from "./ui/logo";
 
 export default function Navbar() {
-  const [isOpen, setIsOpen] = useState(false)
-  const [hidden, setHidden] = useState(false)
-  const [searchQuery, setSearchQuery] = useState("")
-  const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
-  const location = useLocation()
-  const navigate = useNavigate()
-  const { scrollY } = useScroll()
-  const { theme, setTheme } = useTheme()
-  const { user, logout } = useAuth()
+  const [isOpen, setIsOpen] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  const location = useLocation();
+  const navigate = useNavigate();
+  const { scrollY } = useScroll();
+  const { theme, setTheme } = useTheme();
+  const { user, logout } = useAuth();
 
   useMotionValueEvent(scrollY, "change", (latest) => {
-    const previous = scrollY.getPrevious() || 0
+    const previous = scrollY.getPrevious() || 0;
     if (latest > previous && latest > 150) {
-      setHidden(true)
+      setHidden(true);
     } else {
-      setHidden(false)
+      setHidden(false);
     }
-  })
+  });
 
   // Close mobile menu when route changes
   useEffect(() => {
-    setIsOpen(false)
-    setActiveDropdown(null)
-  }, [location.pathname])
+    setIsOpen(false);
+    setActiveDropdown(null);
+  }, [location.pathname]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => {
-      setActiveDropdown(null)
-    }
-    document.addEventListener("click", handleClickOutside)
-    return () => document.removeEventListener("click", handleClickOutside)
-  }, [])
+      setActiveDropdown(null);
+    };
+    document.addEventListener("click", handleClickOutside);
+    return () => document.removeEventListener("click", handleClickOutside);
+  }, []);
 
   const aboutDropdown = [
     {
@@ -72,48 +77,48 @@ export default function Navbar() {
       href: "/about/collaborations",
       description: "Explore our partnerships with institutions worldwide",
     },
-  ]
+  ];
 
   const navItems = [
     { name: "Home", href: "/" },
-    { 
-      name: "About", 
+    {
+      name: "About",
       href: "/about",
-      dropdown: aboutDropdown
+      dropdown: aboutDropdown,
     },
     { name: "Articles", href: "/articles" },
     { name: "Research", href: "/research" },
     { name: "Contact", href: "/contact" },
-  ]
-  
+  ];
+
   const handleSearch = (e: React.FormEvent) => {
-    e.preventDefault()
+    e.preventDefault();
     if (searchQuery.trim()) {
-      navigate(`/articles?search=${encodeURIComponent(searchQuery)}`)
-      setSearchQuery("")
+      navigate(`/articles?search=${encodeURIComponent(searchQuery)}`);
+      setSearchQuery("");
     }
-  }
-  
+  };
+
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchQuery(e.target.value)
-  }
-  
+    setSearchQuery(e.target.value);
+  };
+
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
     if (e.key === "Enter") {
-      handleSearch(e)
+      handleSearch(e);
     }
-  }
+  };
 
   const handleDropdownToggle = (e: React.MouseEvent, name: string) => {
-    e.stopPropagation()
-    setActiveDropdown(activeDropdown === name ? null : name)
-  }
+    e.stopPropagation();
+    setActiveDropdown(activeDropdown === name ? null : name);
+  };
 
   return (
     <motion.header
       className={cn(
         "sticky top-0 z-50 w-full border-b bg-background/80 backdrop-blur-md transition-all",
-        hidden ? "-translate-y-full" : "translate-y-0",
+        hidden ? "-translate-y-full" : "translate-y-0"
       )}
       initial={{ y: 0 }}
       animate={{ y: hidden ? -100 : 0 }}
@@ -121,11 +126,11 @@ export default function Navbar() {
     >
       <div className="container flex h-16 items-center justify-between px-4 md:px-6">
         <Link to="/" className="flex items-center space-x-2">
-          <Logo 
-            size="md" 
-            color_when_light="primary" 
-            showText 
-            textSize="lg" 
+          <Logo
+            size="md"
+            color_when_light="primary"
+            showText
+            textSize="lg"
             textGradient
           />
         </Link>
@@ -141,16 +146,18 @@ export default function Navbar() {
                       onMouseEnter={() => setActiveDropdown(item.name)}
                       className={cn(
                         "flex items-center space-x-1 text-sm font-medium transition-colors hover:text-primary",
-                        activeDropdown === item.name 
-                          ? "text-primary" 
+                        activeDropdown === item.name
+                          ? "text-primary"
                           : location.pathname.startsWith(item.href)
                           ? "text-primary"
-                          : "text-muted-foreground",
+                          : "text-muted-foreground"
                       )}
                     >
                       <span>{item.name}</span>
                       <motion.div
-                        animate={{ rotate: activeDropdown === item.name ? 180 : 0 }}
+                        animate={{
+                          rotate: activeDropdown === item.name ? 180 : 0,
+                        }}
                         transition={{ duration: 0.2 }}
                       >
                         <ChevronDown className="h-4 w-4" />
@@ -170,11 +177,17 @@ export default function Navbar() {
                         >
                           <div className="py-2">
                             {item.dropdown.map((dropdownItem, index) => (
-                              <Link key={dropdownItem.name} to={dropdownItem.href}>
+                              <Link
+                                key={dropdownItem.name}
+                                to={dropdownItem.href}
+                              >
                                 <motion.div
                                   initial={{ opacity: 0, x: -10 }}
                                   animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.2, delay: index * 0.05 }}
+                                  transition={{
+                                    duration: 0.2,
+                                    delay: index * 0.05,
+                                  }}
                                   whileHover={{
                                     backgroundColor: "rgba(59, 130, 246, 0.1)",
                                     x: 5,
@@ -183,10 +196,12 @@ export default function Navbar() {
                                     "px-4 py-3 border-l-2 border-transparent transition-all duration-200",
                                     location.pathname === dropdownItem.href
                                       ? "bg-blue-50 dark:bg-blue-900/20 border-l-blue-500 dark:border-l-blue-400 text-blue-600 dark:text-blue-400"
-                                      : "text-gray-700 dark:text-gray-300 hover:border-l-blue-300",
+                                      : "text-gray-700 dark:text-gray-300 hover:border-l-blue-300"
                                   )}
                                 >
-                                  <div className="font-medium">{dropdownItem.name}</div>
+                                  <div className="font-medium">
+                                    {dropdownItem.name}
+                                  </div>
                                   <p className="text-xs text-muted-foreground mt-1 leading-relaxed">
                                     {dropdownItem.description}
                                   </p>
@@ -203,7 +218,9 @@ export default function Navbar() {
                     to={item.href}
                     className={cn(
                       "text-sm font-medium transition-colors hover:text-primary relative",
-                      location.pathname === item.href ? "text-primary" : "text-muted-foreground"
+                      location.pathname === item.href
+                        ? "text-primary"
+                        : "text-muted-foreground"
                     )}
                   >
                     {item.name}
@@ -222,8 +239,8 @@ export default function Navbar() {
 
           <form onSubmit={handleSearch} className="relative w-40 lg:w-64">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input 
-              placeholder="Search articles..." 
+            <Input
+              placeholder="Search articles..."
               className="pl-8 h-9"
               value={searchQuery}
               onChange={handleSearchChange}
@@ -232,15 +249,19 @@ export default function Navbar() {
           </form>
 
           <ModeToggle />
-          
+
           {user && <NotificationDropdown />}
-          
+
           <UserAvatar />
         </div>
 
         <div className="flex md:hidden items-center space-x-4">
           <ModeToggle />
-          <Button variant="ghost" size="icon" onClick={() => setIsOpen(!isOpen)}>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsOpen(!isOpen)}
+          >
             <Menu className="h-5 w-5" />
             <span className="sr-only">Toggle menu</span>
           </Button>
@@ -251,7 +272,7 @@ export default function Navbar() {
       <AnimatePresence>
         {isOpen && (
           <motion.div
-            className="fixed inset-0 z-50 bg-background md:hidden"
+            className="fixed inset-0 z-50 bg-background bg-white md:hidden"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -262,22 +283,26 @@ export default function Navbar() {
                 <img src={logo} alt="InQuill Logo" className="w-8 h-8" />
                 <span className="font-bold text-xl">InQuill</span>
               </Link>
-              <Button variant="ghost" size="icon" onClick={() => setIsOpen(false)}>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setIsOpen(false)}
+              >
                 <X className="h-5 w-5" />
                 <span className="sr-only">Close menu</span>
               </Button>
             </div>
             <motion.div
-              className="container grid gap-6 p-6"
+              className="container grid gap-6 p-6 bg-background"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.3, delay: 0.1 }}
             >
               <form onSubmit={handleSearch} className="relative">
                 <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input 
-                  placeholder="Search articles..." 
-                  className="pl-8" 
+                <Input
+                  placeholder="Search articles..."
+                  className="pl-8"
                   value={searchQuery}
                   onChange={handleSearchChange}
                   onKeyDown={handleKeyDown}
@@ -299,7 +324,9 @@ export default function Navbar() {
                         >
                           <span>{item.name}</span>
                           <motion.div
-                            animate={{ rotate: activeDropdown === item.name ? 180 : 0 }}
+                            animate={{
+                              rotate: activeDropdown === item.name ? 180 : 0,
+                            }}
                             transition={{ duration: 0.2 }}
                           >
                             <ChevronDown className="h-4 w-4" />
@@ -319,7 +346,10 @@ export default function Navbar() {
                                   key={dropdownItem.name}
                                   initial={{ opacity: 0, x: -10 }}
                                   animate={{ opacity: 1, x: 0 }}
-                                  transition={{ duration: 0.2, delay: subIndex * 0.05 }}
+                                  transition={{
+                                    duration: 0.2,
+                                    delay: subIndex * 0.05,
+                                  }}
                                 >
                                   <Link
                                     to={dropdownItem.href}
@@ -327,12 +357,16 @@ export default function Navbar() {
                                       "block py-2 text-sm",
                                       location.pathname === dropdownItem.href
                                         ? "text-blue-600 dark:text-blue-400 font-medium"
-                                        : "text-muted-foreground",
+                                        : "text-muted-foreground"
                                     )}
                                     onClick={() => setIsOpen(false)}
                                   >
-                                    <div className="font-medium">{dropdownItem.name}</div>
-                                    <p className="text-xs text-muted-foreground mt-1">{dropdownItem.description}</p>
+                                    <div className="font-medium">
+                                      {dropdownItem.name}
+                                    </div>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      {dropdownItem.description}
+                                    </p>
                                   </Link>
                                 </motion.div>
                               ))}
@@ -345,7 +379,9 @@ export default function Navbar() {
                         to={item.href}
                         className={cn(
                           "text-lg font-medium transition-colors hover:text-primary",
-                          location.pathname === item.href ? "text-primary" : "text-muted-foreground"
+                          location.pathname === item.href
+                            ? "text-primary"
+                            : "text-muted-foreground"
                         )}
                         onClick={() => setIsOpen(false)}
                       >
@@ -358,13 +394,16 @@ export default function Navbar() {
                   <motion.div
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3, delay: 0.1 + navItems.length * 0.05 }}
+                    transition={{
+                      duration: 0.3,
+                      delay: 0.1 + navItems.length * 0.05,
+                    }}
                   >
-                    <NotificationDropdown />
+                    <NotificationDropdown mob={1} />
                   </motion.div>
                 )}
                 <div onClick={() => setIsOpen(false)}>
-                  <UserAvatar />
+                  <UserAvatar mob={1} />
                 </div>
               </nav>
             </motion.div>
@@ -372,5 +411,6 @@ export default function Navbar() {
         )}
       </AnimatePresence>
     </motion.header>
-  )
-} 
+  );
+}
+

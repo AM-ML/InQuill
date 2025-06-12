@@ -1,35 +1,42 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { useAuth } from "../lib/contexts/AuthContext"
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "./ui/dropdown-menu"
-import { Link, useNavigate } from "react-router-dom"
-import { LogOut, User, Settings } from "lucide-react"
+import { useState } from "react";
+import { useAuth } from "../lib/contexts/AuthContext";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "./ui/dropdown-menu";
+import { Link, useNavigate } from "react-router-dom";
+import { LogOut, User, Settings } from "lucide-react";
 
-const DEFAULT_AVATAR_URL = "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ficons.iconarchive.com%2Ficons%2Fpapirus-team%2Fpapirus-status%2F128%2Favatar-default-icon.png&f=1&nofb=1&ipt=7d64dc7f75f630f5a2c012812ed8ebb73f1625630d69614d2665bc70c0641e73"
+const DEFAULT_AVATAR_URL =
+  "https://external-content.duckduckgo.com/iu/?u=https%3A%2F%2Ficons.iconarchive.com%2Ficons%2Fpapirus-team%2Fpapirus-status%2F128%2Favatar-default-icon.png&f=1&nofb=1&ipt=7d64dc7f75f630f5a2c012812ed8ebb73f1625630d69614d2665bc70c0641e73";
 
-export function UserAvatar() {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
-  const [isOpen, setIsOpen] = useState(false)
-  
-  const toggleDropdown = () => setIsOpen(!isOpen)
-  const closeDropdown = () => setIsOpen(false)
-  
+export function UserAvatar({ mob = 0 }) {
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const [isOpen, setIsOpen] = useState(false);
+
+  const toggleDropdown = () => setIsOpen(!isOpen);
+  const closeDropdown = () => setIsOpen(false);
+
   const handleLogout = async () => {
     try {
-      await logout()
-      closeDropdown()
+      await logout();
+      closeDropdown();
     } catch (error) {
-      console.error("Logout failed:", error)
+      console.error("Logout failed:", error);
     }
-  }
-  
+  };
+
   const handleNavigation = (path: string) => {
-    navigate(path)
-    closeDropdown()
-  }
-  
+    navigate(path);
+    closeDropdown();
+  };
+
   if (!user) {
     return (
       <Link to="/auth" className="flex items-center">
@@ -37,23 +44,23 @@ export function UserAvatar() {
           Login
         </button>
       </Link>
-    )
+    );
   }
-  
+
   return (
     <DropdownMenu className="relative">
       <DropdownMenuTrigger className="focus:outline-none">
-        <div 
+        <div
           className="h-10 w-10 rounded-full overflow-hidden border-2 border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-400 transition-colors"
           onClick={toggleDropdown}
         >
-          <img 
-            src={user.avatar || DEFAULT_AVATAR_URL} 
+          <img
+            src={user.avatar || DEFAULT_AVATAR_URL}
             alt={`${user.username}'s avatar`}
             className="h-full w-full object-cover"
             onError={(e) => {
-              const target = e.target as HTMLImageElement
-              target.src = DEFAULT_AVATAR_URL
+              const target = e.target as HTMLImageElement;
+              target.src = DEFAULT_AVATAR_URL;
             }}
           />
         </div>
@@ -67,20 +74,24 @@ export function UserAvatar() {
             </div>
           </div>
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={() => handleNavigation('/dashboard/profile')}>
+          <DropdownMenuItem
+            onClick={() => handleNavigation("/dashboard/profile")}
+          >
             <div className="flex w-full cursor-pointer items-center">
               <User className="mr-2 h-4 w-4" />
               <span>Profile</span>
             </div>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => handleNavigation('/dashboard/settings')}>
+          <DropdownMenuItem
+            onClick={() => handleNavigation("/dashboard/settings")}
+          >
             <div className="flex w-full cursor-pointer items-center">
               <Settings className="mr-2 h-4 w-4" />
               <span>Settings</span>
             </div>
           </DropdownMenuItem>
           <DropdownMenuSeparator />
-          <DropdownMenuItem 
+          <DropdownMenuItem
             className="flex cursor-pointer items-center text-red-600 dark:text-red-400 focus:text-red-600 dark:focus:text-red-400"
             onClick={handleLogout}
           >
@@ -90,5 +101,6 @@ export function UserAvatar() {
         </DropdownMenuContent>
       )}
     </DropdownMenu>
-  )
-} 
+  );
+}
+
